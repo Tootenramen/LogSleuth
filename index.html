@@ -1,0 +1,1191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LogSleuth - Noir Log Detective</title>
+<meta name="description" content="Solve three fictional breaches by actually querying the logs. A tiny real query language, a corkboard with red string, and a verdict that scores your evidence. 100% in your browser.">
+<meta property="og:title" content="LogSleuth - Noir Log Detective">
+<meta property="og:description" content="Query thousands of generated log lines, pin the decisive ones on a corkboard, tie red string, and file your hunch. Three cases, easy to hard.">
+<meta property="og:image" content="https://tootenramen.github.io/LogSleuth/docs/hero.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="LogSleuth - Noir Log Detective">
+<meta name="twitter:description" content="A detective game where you solve fictional breaches by actually querying the logs.">
+<meta name="twitter:image" content="https://tootenramen.github.io/LogSleuth/docs/hero.png">
+<meta name="theme-color" content="#0f0b08">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f0b08'/%3E%3Ccircle cx='14' cy='14' r='7' fill='none' stroke='%237dffa0' stroke-width='3'/%3E%3Cpath d='M19 19l7 7' stroke='%23c8281e' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+:root{
+  --desk:#0e0a07;--wood:#1b130e;--wood2:#2a1d14;--paper:#f1e5c6;--paper2:#e3d1a4;--ink:#2b2014;--ink2:#5a4630;
+  --cork:#b3834f;--cork2:#8f6238;--string:#c8281e;--manila:#d9b977;--manila2:#ecd29a;
+  --ph:#7dffa0;--phd:#5fb27a;--phf:#2f5a3c;--tb:#050906;--tb2:#0a120c;--line:#173021;--hot:#ffb454;--err:#ff8a6b;
+  --mono:'IBM Plex Mono',ui-monospace,'Cascadia Mono','Consolas','Courier New',monospace;
+  --type:'Special Elite','Courier New',ui-monospace,monospace;
+  --hand:'Caveat','Segoe Script','Bradley Hand',cursive;
+}
+body.amber{--ph:#ffc261;--phd:#c8903f;--phf:#5e4421;--tb:#090603;--tb2:#120c05;--line:#2e2210}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(120% 90% at 50% 0%,#241811 0,var(--desk) 62%);color:#e9dcc0;font:14px/1.45 var(--mono);overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--manila2)}
+:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+.skip{position:absolute;left:-999px;top:0;background:#000;color:#fff;padding:6px 10px;z-index:99}.skip:focus{left:8px;top:8px}
+.app{height:100dvh;display:flex;flex-direction:column}
+/* header + folder tabs */
+.top{display:flex;align-items:flex-end;gap:14px;padding:10px 14px 0;flex-wrap:wrap;position:relative}
+.brand{display:flex;gap:10px;align-items:center;color:var(--ph);padding-bottom:8px}
+.brand b{font:400 24px/1 var(--type);letter-spacing:.14em;color:#f1e5c6;display:block}.brand i{font-style:normal;color:var(--string)}
+.brand small{display:block;color:#a59574;font-size:10.5px;letter-spacing:.04em;margin-top:3px}
+.tabs{display:flex;align-items:flex-end;gap:0;flex:1 1 380px;min-width:0;overflow-x:auto;scrollbar-width:none;padding-left:6px}
+.tab{position:relative;appearance:none;border:0;cursor:pointer;text-align:left;margin-right:-7px;padding:9px 34px 7px 18px;background:linear-gradient(#b99a5c,#a78948);color:#34260f;font:400 14px/1.15 var(--type);
+  clip-path:polygon(0 100%,0 22%,6% 0,86% 0,94% 100%);min-width:150px;flex:0 0 auto;white-space:nowrap;filter:drop-shadow(0 -1px 0 rgba(255,255,255,.12));transform:translateY(4px);transition:transform .15s,filter .15s}
+.tab small{display:block;font:500 10px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase;opacity:.8}
+.tab:hover{transform:translateY(1px)}
+.tab[aria-selected=true]{background:linear-gradient(#f1d99d,var(--manila));transform:none;z-index:3}
+.tab .st{position:absolute;right:20px;top:5px;font:700 9.5px/1 var(--mono);color:#7d1710;border:1.5px solid #7d1710;padding:2px 3px;border-radius:2px;transform:rotate(-8deg);display:none}
+.tab.done .st{display:block}
+.tools{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding-bottom:8px;margin-left:auto}
+.stat{font-size:11px;color:#b8a888;padding:0 6px}.stat b{color:var(--ph);font-weight:600}
+.tb{appearance:none;background:#241a12;border:1px solid #4a3827;color:#e9dcc0;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;min-height:32px}
+.tb:hover{background:#33251a;border-color:#7a5d3d}.tb[aria-pressed=false]{opacity:.7}
+.tb.hot{background:var(--string);border-color:#e84b3f;color:#fff;font-weight:600}.tb.hot:hover{background:#dc3427}
+.tb:disabled{opacity:.45;cursor:not-allowed}
+/* deck */
+.deck{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.18fr) minmax(0,1fr);gap:0;background:linear-gradient(#d4b573,var(--manila));padding:10px;border-top:3px solid var(--manila2);position:relative;z-index:1}
+.deck::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(0,0,0,.03) 0 2px,transparent 2px 7px);pointer-events:none}
+.term,.board{position:relative;min-height:0;min-width:0;display:flex;flex-direction:column}
+.term{background:var(--tb);color:var(--ph);border:3px solid #2d2217;border-radius:12px 0 0 12px;box-shadow:inset 0 0 60px rgba(0,0,0,.8),0 6px 18px rgba(0,0,0,.4);overflow:hidden;text-shadow:0 0 5px color-mix(in srgb,var(--ph) 35%,transparent)}
+.term>*{position:relative;z-index:1}
+.term::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:5;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.22) 0 1px,transparent 1px 3px),radial-gradient(120% 100% at 50% 50%,transparent 60%,rgba(0,0,0,.45))}
+.term::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:5;background:color-mix(in srgb,var(--ph) 5%,transparent);animation:flick 5s infinite steps(1)}
+body.nocrt .term::after,body.nocrt .term::before{display:none}
+body.nocrt .term{text-shadow:none}
+@keyframes flick{0%,100%{opacity:.5}7%{opacity:.8}9%{opacity:.4}52%{opacity:.6}54%{opacity:.9}56%{opacity:.5}}
+.qwrap{padding:10px 12px 4px}
+.qbar{display:flex;align-items:center;gap:8px;border:1px solid var(--phf);background:var(--tb2);border-radius:6px;padding:4px 6px 4px 10px;position:relative}
+.qbar:focus-within{border-color:var(--ph);box-shadow:0 0 0 1px var(--ph),0 0 18px color-mix(in srgb,var(--ph) 25%,transparent)}
+.prompt{color:var(--hot);font-weight:600}
+#q{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--ph);font-size:14px;padding:7px 0;caret-color:var(--hot);text-shadow:inherit}
+#q::placeholder{color:var(--phd);opacity:.75}
+.run{background:transparent;border:1px solid var(--phd);color:var(--ph);border-radius:5px;padding:4px 12px;cursor:pointer;min-height:30px}.run:hover{background:var(--phf)}
+#sug{position:absolute;left:0;right:0;top:100%;margin:3px 0 0;padding:4px;list-style:none;background:#07100a;border:1px solid var(--phd);border-radius:6px;z-index:20;box-shadow:0 10px 24px rgba(0,0,0,.6)}
+body.amber #sug{background:#120c05}
+#sug li{display:flex;gap:10px;padding:5px 8px;border-radius:4px;cursor:pointer;font-size:12.5px}
+#sug li small{margin-left:auto;color:var(--phd);font-size:11px}
+#sug li[aria-selected=true],#sug li:hover{background:var(--phf);color:#fff}
+.qmsg{min-height:18px;font-size:12px;padding:3px 4px 0;color:var(--phd)}.qmsg.err{color:var(--err)}
+.cheat{margin:2px 12px 4px;border:1px dashed var(--phf);border-radius:6px;padding:0 10px;font-size:11.5px}
+.cheat summary{cursor:pointer;padding:5px 0;color:var(--phd);list-style:none}.cheat summary::before{content:"+ ";}.cheat[open] summary::before{content:"- "}
+.cheat ol{margin:0 0 6px;padding-left:18px;color:var(--phd)}.cheat li{margin:2px 0}
+code{color:var(--hot);background:rgba(255,255,255,.04);padding:0 4px;border-radius:3px;font-family:var(--mono)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:2px 12px 6px}
+.chip{appearance:none;background:transparent;border:1px solid var(--phf);color:var(--phd);border-radius:999px;padding:2px 10px;font-size:11.5px;cursor:pointer;min-height:24px}
+.chip[aria-pressed=true]{background:var(--phf);color:#fff;border-color:var(--ph)}
+.chip i{font-style:normal;opacity:.7;margin-left:4px}
+.hints{padding:0 12px}
+.hint{border-left:3px solid var(--hot);background:rgba(255,180,84,.07);padding:4px 8px;margin:0 0 4px;font-size:12px;color:#ffd9a3;text-shadow:none;border-radius:0 4px 4px 0}
+.hint b{color:var(--hot)}.hint button{margin-left:6px;background:transparent;border:1px solid var(--hot);color:var(--hot);border-radius:4px;cursor:pointer;font-size:11px;padding:0 6px}
+.histo{display:flex;align-items:flex-end;gap:1px;height:34px;margin:2px 12px 0;border-bottom:1px solid var(--phf);position:relative}
+.histo i{flex:1;min-width:1px;background:var(--phd);opacity:.75;cursor:pointer;min-height:1px;transition:background .1s}
+.histo i:hover{background:var(--hot);opacity:1}.histo i.dm{border-left:1px dashed var(--phf)}
+.tmeta{display:flex;align-items:center;padding:4px 12px;font-size:11.5px;color:var(--phd)}.sp{flex:1}
+.lnk+.lnk{margin-left:10px}
+.lnk{background:transparent;border:0;color:var(--hot);cursor:pointer;text-decoration:underline;font-size:11.5px;padding:2px}
+.results{flex:1;min-height:90px;overflow:auto;position:relative;border-top:1px solid var(--phf);outline:none;scrollbar-color:var(--phf) transparent}
+.spacer{position:relative;width:100%}
+.row{position:absolute;left:0;right:0;height:26px;display:flex;align-items:center;gap:8px;padding:0 10px;cursor:pointer;white-space:nowrap;font-size:12px;border-bottom:1px solid rgba(255,255,255,.025)}
+.row:hover{background:rgba(125,255,160,.07)}
+.row.pinned{background:rgba(200,40,30,.2);box-shadow:inset 3px 0 0 var(--string)}
+.row .pi{width:9px;height:9px;border-radius:50%;flex:none;border:1px solid var(--phf)}.row.pinned .pi{background:var(--string);border-color:#ff7a6e}
+.row:hover .pi{border-color:var(--ph)}
+.ts{color:var(--phd);flex:none}.sr{flex:none;width:64px;font-size:10px;text-align:center;border-radius:3px;padding:0 2px;text-transform:uppercase;letter-spacing:.04em;font-weight:600;text-shadow:none}
+.s-auth{background:#1d4a2b;color:#bfffd0}.s-web{background:#1f3d5a;color:#cfe8ff}.s-endpoint{background:#4f3b14;color:#ffe3a6}.s-dns{background:#4a2a57;color:#f1d1ff}.s-cloud{background:#14494c;color:#c5fbff}
+.msg{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.msg .k{color:var(--phd)}.msg .v{font-weight:400;color:var(--ph);border-bottom:1px dotted transparent}.msg .v:hover{border-bottom-color:var(--hot);color:#fff}
+.msg .v[data-f=event]{color:var(--hot)}
+.agg{padding:8px 12px;font-size:12.5px}.agg h4{margin:2px 0 8px;font:600 12px var(--mono);color:var(--hot)}
+.arow{display:grid;grid-template-columns:minmax(0,1fr) 70px;gap:8px;align-items:center;padding:3px 6px;border-radius:4px;cursor:pointer;position:relative}
+.arow:hover,.arow:focus-visible{background:rgba(125,255,160,.1)}
+.arow .bar{position:absolute;left:0;top:2px;bottom:2px;background:var(--phf);opacity:.55;border-radius:3px;z-index:0}
+.arow span{position:relative;z-index:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.arow b{position:relative;z-index:1;text-align:right;color:var(--hot);font-weight:600}
+.none{padding:18px 14px;color:var(--phd)}
+/* board */
+.board{background:#5a3a22;border:3px solid #3b2514;border-left:0;border-radius:0 12px 12px 0;box-shadow:inset 0 0 0 3px #7a4f2e,inset 0 0 0 5px #3f2916,0 6px 18px rgba(0,0,0,.4);padding:10px;color:var(--ink)}
+.btool{display:flex;gap:6px;align-items:center;padding:0 0 8px;flex-wrap:wrap}.btool .tb{background:#f1e5c6;color:#3a2a17;border-color:#caa86c;font-family:var(--type)}.btool .tb:hover{background:#fff3d4}
+.bstat{font:12px var(--type);color:#f1e5c6;opacity:.85}
+.scroller{flex:1;min-height:0;overflow:auto;border-radius:6px;background-color:var(--cork);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 .25 0 0 0 0 .14 0 0 0 0 .05 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E"),radial-gradient(circle at 20% 30%,rgba(255,225,170,.25),transparent 40%),radial-gradient(circle at 80% 80%,rgba(70,35,10,.25),transparent 50%);
+  box-shadow:inset 0 0 40px rgba(40,18,4,.55)}
+.canvas{position:relative;min-width:100%;min-height:100%}
+.strings{position:absolute;left:0;top:0;pointer-events:none;z-index:2;overflow:visible}
+.strings .hit{pointer-events:stroke;cursor:pointer;stroke:transparent;fill:none;stroke-width:14}
+.strings .sh{stroke:rgba(30,10,0,.35);fill:none;stroke-width:4;stroke-linecap:round;transform:translate(2px,4px)}
+.strings .st{stroke:var(--string);fill:none;stroke-width:3;stroke-linecap:round}
+.strings .sf{stroke:rgba(255,170,150,.55);fill:none;stroke-width:1;stroke-dasharray:2 5;stroke-linecap:round}
+.strings .live .st{stroke-dasharray:6 4}
+.strings g.snip{opacity:0;transition:opacity .25s}
+.empty{position:absolute;left:0;right:0;bottom:16px;text-align:center;font:600 22px/1.1 var(--hand);color:#4a2e17;opacity:.8;pointer-events:none;display:flex;flex-direction:column;gap:2px}
+.card{position:absolute;width:212px;background:var(--paper);color:var(--ink);padding:20px 10px 8px;box-shadow:0 6px 10px rgba(30,12,0,.4),0 1px 0 rgba(255,255,255,.6) inset;z-index:3;font:11px/1.35 var(--mono);transform:rotate(var(--r,0deg));transform-origin:50% 0;cursor:grab;touch-action:none;
+  background-image:linear-gradient(rgba(150,110,50,.07) 1px,transparent 1px);background-size:100% 14px}
+.card.dragging{cursor:grabbing;box-shadow:0 14px 22px rgba(30,12,0,.5);z-index:9;transition:none}
+.card.fresh{animation:drop .42s cubic-bezier(.2,1.4,.4,1)}
+@keyframes drop{0%{opacity:0;transform:translateY(-22px) scale(1.14) rotate(var(--r))}100%{opacity:1}}
+.card .hd{display:flex;gap:6px;align-items:center;font:12px var(--type);margin-bottom:3px}.card .hd time{color:var(--ink2)}
+.card .sr{width:auto;padding:0 5px}
+.card .ln{word-break:break-word;max-height:150px;overflow:auto;font-size:10.5px;color:#33281a}
+.card .ln b{font-weight:600;color:#7d1710}
+.card .note{display:block;width:100%;margin-top:6px;background:transparent;border:0;border-bottom:1.5px dashed #a98b55;font:700 18px/1.1 var(--hand);color:#1a3a73;padding:1px 0;outline:0}
+.card .note::placeholder{color:#a08f6d;font-weight:500}
+.card .note:focus{border-bottom-color:#1a3a73}
+.pinhead{position:absolute;top:-8px;left:50%;margin-left:-11px;width:22px;height:22px;border-radius:50%;border:0;padding:0;cursor:crosshair;touch-action:none;
+  background:radial-gradient(circle at 34% 30%,#ff9a8f,#c8281e 55%,#6f0e08);box-shadow:0 3px 4px rgba(0,0,0,.5),0 0 0 3px rgba(255,255,255,.0);transition:transform .12s,box-shadow .12s}
+button.pinhead:hover,.pinhead.armed{transform:scale(1.25);box-shadow:0 3px 4px rgba(0,0,0,.5),0 0 0 4px rgba(255,200,120,.75)}
+.pinhead.armed{animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 3px 4px rgba(0,0,0,.5),0 0 0 9px rgba(255,200,120,.2)}}
+.card .x{position:absolute;right:4px;top:3px;width:22px;height:22px;border:0;background:transparent;color:#8a6a40;font-size:16px;cursor:pointer;border-radius:4px;line-height:1}.card .x:hover{background:rgba(0,0,0,.08);color:#7d1710}
+.card.target{outline:3px dashed var(--string);outline-offset:3px}
+.card.note-t{background-color:#ffe98a;background-image:none;width:178px;padding-top:18px}
+.card.note-t textarea{width:100%;height:78px;resize:none;background:transparent;border:0;outline:0;font:700 19px/1.05 var(--hand);color:#1a3a73}
+.card.brief{width:256px;background-color:var(--manila2);cursor:grab}
+.card.brief h3{margin:0 0 2px;font:400 18px/1.1 var(--type);color:#5b2410}
+.card.brief .lv{font:700 10px var(--mono);letter-spacing:.1em;color:#7d1710;border:1.5px solid #7d1710;display:inline-block;padding:1px 5px;border-radius:2px;transform:rotate(-3deg);margin-bottom:5px}
+.card.brief ul{margin:4px 0 0;padding-left:15px}.card.brief li{margin:3px 0;font-size:10.8px}
+.card.brief .go{font:700 17px var(--hand);color:#1a3a73;margin-top:5px}
+/* footer + mobile nav */
+.foot{display:flex;justify-content:space-between;gap:10px;padding:4px 14px;font-size:10.5px;color:#a59574;background:#120c08;flex-wrap:wrap}
+.mnav{display:none}
+.toast{position:fixed;left:50%;bottom:54px;transform:translate(-50%,20px);background:#f1e5c6;color:#2b2014;padding:8px 14px;border-radius:6px;font:13px var(--type);box-shadow:0 8px 20px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:90vw}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast button{margin-left:8px;border:1px solid #7d1710;background:transparent;color:#7d1710;border-radius:4px;cursor:pointer;font:inherit;pointer-events:auto}
+/* hunch dialog */
+dialog{border:0;padding:0;background:transparent;max-width:min(720px,96vw);width:100%;color:var(--ink);overflow:visible}
+dialog::backdrop{background:rgba(5,3,1,.78);backdrop-filter:blur(2px)}
+.folder{border-radius:4px 14px 10px 10px;padding:22px 26px 20px;box-shadow:0 24px 60px rgba(0,0,0,.7);position:relative;max-height:92dvh;overflow:auto;
+  background:linear-gradient(rgba(150,110,50,.09) 1px,transparent 1px) 0 0/100% 26px,linear-gradient(#f6ecd0,var(--paper))}
+.folder::before{content:"";position:absolute;left:-1px;top:-22px;width:190px;height:24px;background:var(--manila2);border-radius:10px 10px 0 0;clip-path:polygon(0 100%,0 30%,8% 0,86% 0,100% 100%)}
+.folder h2{font:400 26px/1.1 var(--type);margin:0 0 2px;color:#5b2410}.folder .sub{color:var(--ink2);font-size:12px;margin:0 0 12px}
+.fgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 16px}
+.fgrid label{display:flex;flex-direction:column;gap:3px;font:13px var(--type);color:#4a3a22}.fgrid label.w{grid-column:1/-1}
+.fgrid select{width:100%;max-width:100%;background:#fffaf0;border:1.5px solid #a98b55;border-radius:4px;padding:7px 8px;font:12.5px var(--mono);color:var(--ink);min-height:36px}
+.facts{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.btn{appearance:none;border:1.5px solid #7d1710;background:var(--string);color:#fff;font:600 13px var(--mono);padding:9px 16px;border-radius:5px;cursor:pointer;min-height:38px}
+.btn:hover{background:#dc3427}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.alt{background:transparent;color:#7d1710}.btn.alt:hover{background:rgba(125,23,16,.1)}
+.fsmall{font-size:11.5px;color:var(--ink2)}
+.stamp{position:absolute;right:22px;top:16px;font:400 26px var(--type);color:#b3180f;border:4px double #b3180f;padding:2px 12px;transform:rotate(-9deg);opacity:.92;letter-spacing:.06em;animation:stampin .5s cubic-bezier(.2,1.6,.4,1)}
+.stamp.cold{color:#2b4a8a;border-color:#2b4a8a}.stamp.part{color:#8a5a0b;border-color:#8a5a0b}
+@keyframes stampin{0%{transform:rotate(-9deg) scale(2.4);opacity:0}100%{transform:rotate(-9deg) scale(1)}}
+.score{display:flex;align-items:baseline;gap:12px;margin:6px 0 2px}.score b{font:400 46px/1 var(--type);color:#5b2410}.score span{font:13px var(--type)}
+.vt{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}.vt td,.vt th{padding:4px 6px;border-bottom:1px solid rgba(90,70,40,.25);text-align:left;vertical-align:top}
+.vt th{font:400 12.5px var(--type);color:#6a5430;width:30%}.ok{color:#1a6b36;font-weight:700}.no{color:#a3170d;font-weight:700}
+.kl{background:#fffaf0;border:1px solid #cdb27c;border-left:4px solid var(--string);padding:6px 8px;margin:6px 0;font-size:11px;word-break:break-word}
+.kl small{display:block;color:var(--ink2);margin-top:3px;font:12px var(--type)}.kl .pz{font:700 10px var(--mono);color:#1a6b36}.kl .pz.m{color:#a3170d}
+.bd{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0}.bd div{background:#fffaf0;border:1px solid #cdb27c;padding:6px 8px;text-align:center;font-size:11px}.bd b{display:block;font:400 22px var(--type);color:#5b2410}
+.story{margin:6px 0 0;padding-left:18px;font-size:12px}.story li{margin:3px 0}
+@media (max-width:900px){
+  body{overflow:auto}.app{height:auto;min-height:100dvh}
+  .top{gap:6px;padding:8px 10px 0}.brand small{display:none}.brand b{font-size:20px}.brand{padding-bottom:4px}
+  .tools{margin-left:0;width:100%;padding-bottom:6px;gap:4px}.stat{padding:0 3px}.tb{padding:5px 8px;font-size:11.5px}
+  .tab{min-width:0;padding:8px 22px 6px 14px;font-size:12.5px}.tab small{font-size:9px}
+  .deck{display:flex;flex-direction:column;padding:6px;height:calc(100dvh - 190px);min-height:440px;position:relative}
+  .term,.board{flex:1;border-radius:10px;border:3px solid #2d2217}.board{border-left:3px solid #3b2514}
+  .deck[data-view=term] .board,.deck[data-view=board] .term{display:none}
+  .mnav{display:flex;position:sticky;bottom:0;z-index:30;background:#120c08;border-top:1px solid #4a3827}
+  .mnav button{flex:1;background:transparent;border:0;color:#e9dcc0;padding:12px 6px;min-height:46px;font:600 13px var(--mono)}
+  .mnav button.on{background:#2b1f15;color:var(--ph);box-shadow:inset 0 3px 0 var(--string)}.mnav b{color:var(--hot)}
+  .fgrid{grid-template-columns:minmax(0,1fr)}.folder{padding:20px 16px 16px}.stamp{position:static;display:inline-block;margin:0 0 8px;font-size:20px}.bd{grid-template-columns:repeat(2,1fr)}
+  .tab .tt{display:none}.tab small{font-size:11px}
+  .cheat{display:block}.foot{font-size:10px;padding-bottom:6px}.toast{bottom:64px}
+}
+@media (prefers-reduced-motion:reduce){.term::before{animation:none}.card.fresh,.stamp,.pinhead.armed{animation:none}.tab,.pinhead{transition:none}}
+
+</style>
+</head>
+<body>
+<a class="skip" href="#q">Skip to query bar</a>
+<div class="app">
+<header class="top">
+  <div class="brand"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><circle cx="14" cy="14" r="7" fill="none" stroke="currentColor" stroke-width="3"/><path d="M19 19l7 7" stroke="#c8281e" stroke-width="4" stroke-linecap="round"/></svg><div><b>LOG<i>SLEUTH</i></b><small>noir log forensics &middot; every log here is fictional</small></div></div>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Cases"></nav>
+  <div class="tools">
+    <span class="stat" title="Queries you committed with Enter (fewer is better)">Queries <b id="nq">0</b></span>
+    <span class="stat" title="Hints used">Hints <b id="nh">0</b></span>
+    <button class="tb" id="bHint" title="Reveal the next hint (costs points)">Hint</button>
+    <button class="tb" id="bCrt" aria-pressed="true" title="Toggle CRT scanlines">CRT</button>
+    <button class="tb" id="bPh" title="Switch phosphor colour">Green</button>
+    <button class="tb" id="bSnd" aria-pressed="false" title="Toggle sound effects (off by default)">Sound off</button>
+    <button class="tb" id="bReset" title="Start this case over">Reset case</button>
+    <button class="tb hot" id="bHunch">File a hunch</button>
+  </div>
+</header>
+<main class="deck" id="deck" data-view="term">
+  <section class="term" id="term" aria-label="Log terminal">
+    <div class="qwrap">
+      <div class="qbar">
+        <span class="prompt" aria-hidden="true">&gt;</span>
+        <input id="q" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" role="combobox" aria-expanded="false" aria-controls="sug" aria-autocomplete="list" aria-label="Log query" placeholder="user:priya.nair  |  powershell  |  event:signin | count by ip">
+        <button class="run" id="bRun" aria-label="Run query">Run</button>
+        <ul id="sug" role="listbox" hidden></ul>
+      </div>
+      <div class="qmsg" id="qmsg" role="status" aria-live="polite"></div>
+    </div>
+    <details class="cheat" id="cheat" open>
+      <summary>Cheat sheet</summary>
+      <ol>
+        <li><code>powershell</code> &nbsp;keyword anywhere &middot; <code>-term</code> excludes &middot; <code>a OR b</code> &middot; <code>"quoted phrase"</code></li>
+        <li><code>user:priya.nair ip:203.0.113.*</code> &nbsp;field:value, <code>*</code> wildcard &middot; <code>bytes:&gt;1000000</code></li>
+        <li><code>date:03-11 after:03:00 before:04:30</code> &nbsp;time range (UTC)</li>
+        <li><code>| count by ip,user</code> &nbsp;group &amp; count &middot; <code>| count</code></li>
+        <li><code>| top domain 10</code> &nbsp;rank values &middot; <code>| head 20</code> &middot; shift-click a value to filter</li>
+      </ol>
+    </details>
+    <div class="chips" id="chips" role="group" aria-label="Filter by log source"></div>
+    <div class="hints" id="hints" aria-live="polite"></div>
+    <div class="histo" id="histo" role="img" aria-label="Histogram of matching lines over time. Click a bar to zoom to that hour."></div>
+    <div class="tmeta"><span id="count">0 lines</span><span class="sp"></span><button class="lnk" id="bMode" aria-pressed="false" title="Click a log line to pin it. Shift+click (or this toggle) makes clicking a value filter by it.">Value click: pins</button><button class="lnk" id="bPinRes" hidden>Pin this result as a note</button></div>
+    <div class="results" id="results" tabindex="-1"><div class="spacer" id="spacer"></div></div>
+  </section>
+  <section class="board" id="boardPanel" aria-label="Corkboard">
+    <div class="btool">
+      <button class="tb" id="bNote">+ Sticky note</button>
+      <button class="tb" id="bTidy">Tidy</button>
+      <button class="tb" id="bCut">Cut all string</button>
+      <span class="sp"></span><span class="bstat" id="bstat"></span>
+    </div>
+    <div class="scroller" id="scroller">
+      <div class="canvas" id="canvas">
+        <svg class="strings" id="strings" aria-hidden="true"></svg>
+        <div class="empty" id="empty"><span>Click a log line to pin it.</span><span>Drag a red pin onto another card to tie string.</span></div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="foot"><span>All companies, people and IPs are fictional (reserved ranges). Runs entirely in your browser.</span><span>Built by <a href="https://www.linkedin.com/in/gustavo-freitas-69b93910b/" target="_blank" rel="noopener">Gustavo Freitas</a></span></footer>
+<nav class="mnav" aria-label="Panels">
+  <button data-v="term" class="on">Terminal</button><button data-v="board">Board <b id="mbadge">0</b></button><button id="mHunch">Hunch</button>
+</nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<dialog id="hunch" aria-labelledby="hTitle"><div class="folder" id="hbody"></div></dialog>
+<script>
+/* ===== LogSleuth: deterministic case generator (all data fictional) ===== */
+const T = (m, d, h, mi = 0, s = 0) => Date.UTC(2026, m - 1, d, h, mi, s);
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function RNG(seed) {
+  const r = mulberry32(seed);
+  const o = {
+    f: r,
+    int: (a, b) => a + Math.floor(r() * (b - a + 1)),
+    pick: a => a[Math.floor(r() * a.length)],
+    chance: p => r() < p,
+    jit: (c, p) => c * (1 + (r() * 2 - 1) * p),
+    wpick(items) { let t = 0; for (const i of items) t += i[1]; let x = r() * t; for (const i of items) { x -= i[1]; if (x <= 0) return i[0]; } return items[items.length - 1][0]; },
+    str(n, al) { al = al || '0123456789abcdef'; let s = ''; for (let i = 0; i < n; i++) s += al[Math.floor(r() * al.length)]; return s; }
+  };
+  return o;
+}
+const B32 = 'abcdefghijklmnopqrstuvwxyz234567';
+const UAS = ['Chrome/122.0 (Win10)', 'Edge/122.0 (Win10)', 'Safari/17.3 (macOS)', 'Firefox/123.0 (Win10)'];
+const EXT = [
+  ['search.example', ['/q?x=shipping+rates', '/q?x=pdf+merge', '/q?x=holiday+calendar', '/q?x=vat+rates', '/q?x=excel+vlookup'], 40000, 9],
+  ['news-daily.example', ['/world/markets', '/tech/chips-shortage', '/local/weather', '/sport/finals'], 180000, 6],
+  ['docs-cloud.example', ['/d/open', '/d/export', '/d/share'], 90000, 4],
+  ['video-share.example', ['/watch?v=a81f', '/watch?v=77cd', '/watch?v=e0b2'], 900000, 3],
+  ['shop-supplies.example', ['/catalog/paper', '/catalog/toner', '/cart'], 120000, 3],
+  ['maps-view.example', ['/route?from=hq', '/place/depot'], 220000, 2],
+  ['fonts-static.example', ['/css/body.css', '/f/body.woff2'], 30000, 3],
+  ['weather-now.example', ['/little-rock', '/radar'], 60000, 2],
+  ['freight-track.example', ['/track/FTX88213', '/track/FTX88307'], 50000, 2],
+  ['jobs-board.example', ['/listings?q=analyst'], 70000, 1]
+];
+const INT = co => [
+  ['mail.' + co, ['/inbox', '/compose', '/folders/sent', '/calendar'], 70000, 8],
+  ['erp.' + co, ['/erp/orders', '/erp/invoices', '/erp/vendors', '/erp/reports/aging', '/erp/shipments'], 110000, 7],
+  ['wiki.' + co, ['/wiki/home', '/wiki/policies', '/wiki/it-help'], 60000, 3],
+  ['crm.' + co, ['/crm/accounts', '/crm/leads', '/crm/forecast'], 130000, 3]
+];
+const DNS_EXTRA = [['ocsp-check.example', 3], ['time.ntp-pool.example', 2], ['wu.update-svc.example', 4], ['cdn-static.example', 5], ['ads-metrics.example', 3]];
+const EP = [
+  ['chrome.exe', 'explorer.exe', '"C:\\Program Files\\Browser\\chrome.exe" --profile-directory=Default', 10],
+  ['msedge.exe', 'explorer.exe', '"C:\\Program Files\\Edge\\msedge.exe"', 6],
+  ['OUTLOOK.EXE', 'explorer.exe', '"C:\\Program Files\\Office\\OUTLOOK.EXE"', 3],
+  ['EXCEL.EXE', 'explorer.exe', '"C:\\Program Files\\Office\\EXCEL.EXE" "C:\\Users\\{u}\\Documents\\report.xlsx"', 5],
+  ['WINWORD.EXE', 'OUTLOOK.EXE', '"C:\\Program Files\\Office\\WINWORD.EXE" /n "C:\\Users\\{u}\\AppData\\Local\\Temp\\attachment.docx"', 3],
+  ['WINWORD.EXE', 'explorer.exe', '"C:\\Program Files\\Office\\WINWORD.EXE" "C:\\Users\\{u}\\Documents\\memo.docx"', 3],
+  ['splwow64.exe', 'WINWORD.EXE', 'splwow64.exe 12288', 1],
+  ['AcroRd32.exe', 'chrome.exe', '"C:\\Program Files\\Reader\\AcroRd32.exe" "C:\\Users\\{u}\\Downloads\\statement.pdf"', 2],
+  ['notepad.exe', 'explorer.exe', 'notepad.exe notes.txt', 2],
+  ['Teams.exe', 'explorer.exe', '"C:\\Users\\{u}\\AppData\\Local\\Teams\\Teams.exe"', 3],
+  ['svchost.exe', 'services.exe', 'C:\\Windows\\System32\\svchost.exe -k netsvcs -p', 4],
+  ['backgroundTaskHost.exe', 'svchost.exe', 'backgroundTaskHost.exe -ServerName:App.AppX9d2.mca', 2],
+  ['OneDrive.exe', 'explorer.exe', 'OneDrive.exe /background', 2],
+  ['SearchProtocolHost.exe', 'SearchIndexer.exe', 'SearchProtocolHost.exe Global\\UsGthrFltPipeMssGthrPipe', 2]
+];
+const EP_IT = [
+  ['powershell.exe', 'explorer.exe', 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\\IT\\scripts\\inventory.ps1', 4],
+  ['cmd.exe', 'explorer.exe', 'cmd.exe /c ipconfig /all', 2],
+  ['certutil.exe', 'cmd.exe', 'certutil.exe -verify C:\\IT\\certs\\gateway.cer', 1],
+  ['mmc.exe', 'explorer.exe', 'mmc.exe dsa.msc', 2],
+  ['ping.exe', 'cmd.exe', 'ping.exe -n 4 erp', 1]
+];
+
+function mkUsers(R, list, o) {
+  return list.map((x, i) => ({
+    u: x[0], dept: x[1], host: x[2] || ('WS-' + x[1] + '-' + String(i + 1).padStart(2, '0')),
+    ip: '10.20.' + (1 + (i % 5)) + '.' + (20 + i * 3), dev: 'dev-' + R.str(4),
+    ua: UAS[i % UAS.length], remote: !!x[3], home: '192.0.2.' + (30 + i * 5), apps: x[4] || ['mail', 'erp'], it: x[1] === 'IT'
+  }));
+}
+function pickW(R, arr) { return R.wpick(arr.map(x => [x, x[3]])); }
+
+function baseline(R, add, c) {
+  const ints = INT(c.co), tick = (R2, a) => a;
+  for (const [m, d] of c.days) {
+    for (const u of c.users) {
+      const day0 = T(m, d, 14, R.int(0, 50), R.int(0, 59));
+      const end = T(m, d, 22, R.int(10, 59), R.int(0, 59));
+      const rem = u.remote && R.chance(0.6);
+      const ip = rem ? u.home : c.office, geo = rem ? 'US/Conway' : 'US/Little Rock';
+      u.today = { ip, geo, start: day0, end };
+      if (c.auth) {
+        let t = day0; const app = rem ? 'vpn' : 'sso';
+        if (R.chance(0.05)) { add(t - 20000, 'auth', { event: 'signin', user: u.u, app, result: 'failure', reason: 'bad_password', ip, geo, device: u.dev, known: 'yes', mfa: '-', ua: u.ua }); t += 15000; }
+        add(t, 'auth', { event: 'signin', user: u.u, app, result: 'mfa_required', ip, geo, device: u.dev, known: 'yes', mfa: 'push', ua: u.ua });
+        add(t + 1200, 'auth', { event: 'mfa_challenge', user: u.u, app, result: 'sent', ip, device: u.dev, mfa: 'push' });
+        if (R.chance(0.05)) { add(t + 31000, 'auth', { event: 'mfa_result', user: u.u, app, result: 'timeout', ip, device: u.dev, mfa: 'push' }); t += 40000; add(t, 'auth', { event: 'mfa_challenge', user: u.u, app, result: 'sent', ip, device: u.dev, mfa: 'push' }); }
+        const rt = t + R.int(5, 14) * 1000;
+        add(rt, 'auth', { event: 'mfa_result', user: u.u, app, result: 'approved', ip, device: u.dev, mfa: 'push' });
+        add(rt + 1500, 'auth', { event: 'signin', user: u.u, app, result: 'success', ip, geo, device: u.dev, known: 'yes', mfa: 'push', ua: u.ua });
+        for (const a of u.apps) add(rt + R.int(60, 3000) * 1000, 'auth', { event: 'app_access', user: u.u, app: a, result: 'success', ip, device: u.dev, ua: u.ua });
+        add(end, 'auth', { event: 'signout', user: u.u, app, result: 'success', ip, device: u.dev });
+      }
+      if (c.web) {
+        const n = R.int(c.web[0], c.web[1]);
+        for (let i = 0; i < n; i++) {
+          const t = day0 + R.int(60, Math.floor((end - day0) / 1000)) * 1000;
+          const isInt = R.chance(0.45);
+          const dom = isInt ? pickW(R, ints) : pickW(R, EXT);
+          const path = R.pick(dom[1]);
+          const post = isInt && R.chance(0.12);
+          add(t, 'web', {
+            user: u.u, ip: u.ip, method: post ? 'POST' : 'GET', domain: dom[0], url: path,
+            status: R.wpick([[200, 86], [304, 7], [302, 3], [404, 3], [500, 1]]),
+            bytes_out: post ? R.int(800, 24000) : R.int(300, 1400), bytes_in: Math.floor(dom[2] * (0.2 + R.f() * 1.6)), ua: u.ua
+          });
+        }
+      }
+      if (c.endpoint) {
+        const n = R.int(c.endpoint[0], c.endpoint[1]);
+        const pool = u.it ? EP.concat(EP_IT) : EP;
+        for (let i = 0; i < n; i++) {
+          const t = day0 + R.int(30, Math.floor((end - day0) / 1000)) * 1000;
+          const e = pickW(R, pool);
+          add(t, 'endpoint', { event: 'proc_start', host: u.host, user: u.u, proc: e[0], parent: e[1], cmd: e[2].replace('{u}', u.u) });
+        }
+      }
+      if (c.dns) {
+        const n = R.int(c.dns[0], c.dns[1]);
+        const all = EXT.map(x => [x[0], x[3]]).concat(ints.map(x => [x[0], x[3]])).concat(DNS_EXTRA);
+        for (let i = 0; i < n; i++) {
+          const t = day0 + R.int(10, Math.floor((end - day0) / 1000)) * 1000;
+          const q = R.wpick(all);
+          const long = R.chance(0.03);
+          const qn = long ? R.str(38, B32) + '.safebrowse-check.example' : (R.chance(0.3) ? 'www.' + q : q);
+          add(t, 'dns', { host: u.host, ip: u.ip, qname: qn, qtype: R.wpick([['A', 84], ['AAAA', 14], ['TXT', 2]]), rcode: R.wpick([['NOERROR', 96], ['NXDOMAIN', 4]]) });
+        }
+      }
+      if (c.cloud && R.chance(c.cloud.p)) {
+        const n = R.int(1, c.cloud.n);
+        for (let i = 0; i < n; i++) {
+          const t = day0 + R.int(300, Math.floor((end - day0) / 1000)) * 1000;
+          const b = R.pick(c.cloud.buckets), ev = R.wpick([['GetObject', 6], ['ListBucket', 4], ['PutObject', 2]]);
+          add(t, 'cloud', { event: ev, user: u.u, ip, ua: R.chance(0.85) ? 'console' : 'cloud-cli/2.15.1', bucket: b, object: ev === 'ListBucket' ? '-' : R.pick(['reports/q1-summary.pdf', 'reports/aging.csv', 'exports/orders-weekly.csv.gz', 'shared/templates/price-list.xlsx', 'media/banner-' + R.int(1, 9) + '.png']), bytes: ev === 'ListBucket' ? 0 : R.int(40000, 60000000), result: 'success', keyid: 'console' });
+        }
+      }
+    }
+  }
+}
+
+function finalize(L, keys, extra) {
+  L.sort((a, b) => a.ts - b.ts || a.n - b.n);
+  L.forEach((r, i) => {
+    r.id = i + 1;
+    if (r.src === 'web' && !r.f.event) r.f.event = 'http_request';
+    if (r.src === 'dns' && !r.f.event) r.f.event = 'query';
+    if (r.src === 'dns') { r.f.qlen = r.f.qname.length; const p = r.f.qname.split('.'); r.f.sld = p.slice(-2).join('.'); }
+  });
+  return L;
+}
+function shuffled(R, a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R.f() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function opts(R, list) { return shuffled(R, list.map((l, i) => ({ id: String(i), label: l }))); }
+
+function newCtx(seed) {
+  const R = RNG(seed), L = [], keys = []; let n = 0;
+  const add = (ts, src, f) => { const r = { ts: Math.round(ts), src, n: n++, f: Object.assign({ src }, f) }; L.push(r); return r; };
+  return { R, L, keys, add };
+}
+
+/* ---------------- CASE 1 : The Midnight Push ---------------- */
+function case1() {
+  const { R, L, keys, add } = newCtx(1101);
+  const co = 'larkspur-textiles.example';
+  const users = mkUsers(R, [
+    ['priya.nair', 'AP', 'WS-AP-03', 1, ['mail', 'erp']], ['marcus.oyelaran', 'SLS', null, 0, ['mail', 'crm']], ['hannah.brandt', 'MKT', null, 0, ['mail', 'wiki']],
+    ['tobias.keane', 'IT', null, 0, ['mail', 'wiki']], ['wen.zhao', 'FIN', null, 1, ['mail', 'erp']], ['elias.moreau', 'OPS', null, 0, ['mail', 'erp']],
+    ['sofia.ricci', 'HR', null, 0, ['mail', 'wiki']], ['jamal.whitfield', 'OPS', null, 0, ['mail', 'erp']], ['ingrid.solberg', 'LEG', null, 1, ['mail', 'wiki']],
+    ['carlos.mendes', 'SLS', null, 0, ['mail', 'crm']], ['nadia.haddad', 'FIN', null, 0, ['mail', 'erp']], ['owen.pryce', 'IT', null, 0, ['mail', 'wiki']],
+    ['linh.tran', 'PRD', null, 0, ['mail', 'erp']], ['imani.clarke', 'CS', null, 0, ['mail', 'crm']]
+  ]);
+  const U = n => users.find(u => u.u === n);
+  const days = [[3, 9], [3, 10], [3, 11]];
+  const office = '198.51.100.10';
+  baseline(R, add, { co, users, days, office, auth: 1, web: [20, 30], endpoint: [12, 20], dns: [16, 26] });
+  const priya = U('priya.nair'), P = 'priya.nair';
+  // benign: svc-monitor health checks
+  for (let i = 0; i < 40; i++) add(T(3, 9 + (i % 3), 14, 0) + i * 12 * 60000 + R.int(0, 9) * 1000, 'web', { user: 'svc-monitor', ip: '10.20.9.4', method: 'GET', domain: 'erp.' + co, url: '/healthz', status: 200, bytes_out: 220, bytes_in: 41, ua: 'uptime-probe/1.0' });
+  // benign: marcus travelling in DE, known device, TOTP
+  { const ip = '192.0.2.88', geo = 'DE/Frankfurt', dv = U('marcus.oyelaran').dev, ua = U('marcus.oyelaran').ua, u = 'marcus.oyelaran'; let t = T(3, 10, 8, 38, 12);
+    add(t, 'auth', { event: 'signin', user: u, app: 'sso', result: 'mfa_required', ip, geo, device: dv, known: 'yes', mfa: 'totp', ua });
+    add(t + 9000, 'auth', { event: 'mfa_result', user: u, app: 'sso', result: 'approved', ip, device: dv, mfa: 'totp' });
+    add(t + 10200, 'auth', { event: 'signin', user: u, app: 'sso', result: 'success', ip, geo, device: dv, known: 'yes', mfa: 'totp', ua });
+    add(t + 95000, 'auth', { event: 'app_access', user: u, app: 'crm', result: 'success', ip, device: dv, ua }); }
+  // benign: elias fat-fingers password then gets in
+  { const u = 'elias.moreau', e = U(u), ip = office; let t = T(3, 10, 14, 22, 5);
+    for (let i = 0; i < 4; i++) add(t + i * 21000, 'auth', { event: 'signin', user: u, app: 'sso', result: 'failure', reason: 'bad_password', ip, geo: 'US/Little Rock', device: e.dev, known: 'yes', mfa: '-', ua: e.ua }); }
+  // red herring: password spray from 198.51.100.200, nothing succeeds
+  { const sp = '198.51.100.200'; let t = T(3, 10, 11, 2, 14);
+    const names = users.map(u => u.u).concat(['admin', 'test', 'jsmith', 'helpdesk', 'finance']);
+    for (const nm of names) { const k = R.int(1, 2); for (let j = 0; j < k; j++) { t += R.int(8, 30) * 1000;
+      add(t, 'auth', { event: 'signin', user: nm, app: 'sso', result: 'failure', reason: ['admin', 'test', 'jsmith', 'helpdesk', 'finance'].includes(nm) ? 'unknown_user' : 'bad_password', ip: sp, geo: 'NL/Amsterdam', device: 'dev-0000', known: 'no', mfa: '-', ua: 'Go-http-client/1.1' }); } } }
+  // red herring: tobias admin scripting; hannah clickbait
+  { const t0 = U('tobias.keane'); add(T(3, 10, 15, 41, 7), 'endpoint', { event: 'proc_start', host: t0.host, user: t0.u, proc: 'powershell.exe', parent: 'explorer.exe', cmd: 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\\IT\\scripts\\patch-report.ps1' });
+    add(T(3, 10, 15, 41, 9), 'endpoint', { event: 'proc_start', host: t0.host, user: t0.u, proc: 'certutil.exe', parent: 'powershell.exe', cmd: 'certutil.exe -verify C:\\IT\\certs\\gateway.cer' });
+    const h = U('hannah.brandt'); const tt = T(3, 10, 17, 12, 30);
+    add(tt, 'web', { user: h.u, ip: h.ip, method: 'GET', domain: 'promo-win-prize.example', url: '/claim?ref=banner', status: 200, bytes_out: 640, bytes_in: 55210, ua: h.ua });
+    for (let i = 0; i < 4; i++) add(tt - 3000 + i * 1500, 'dns', { host: h.host, ip: h.ip, qname: 'promo-win-prize.example', qtype: 'A', rcode: i < 3 ? 'NOERROR' : 'NXDOMAIN' }); }
+  // priya legit evening session from home
+  { const hip = priya.home, dv = priya.dev, ua = priya.ua; let t = T(3, 11, 2, 31, 9);
+    add(t, 'auth', { event: 'signin', user: P, app: 'vpn', result: 'mfa_required', ip: hip, geo: 'US/Conway', device: dv, known: 'yes', mfa: 'push', ua });
+    add(t + 1200, 'auth', { event: 'mfa_challenge', user: P, app: 'vpn', result: 'sent', ip: hip, device: dv, mfa: 'push' });
+    add(t + 9000, 'auth', { event: 'mfa_result', user: P, app: 'vpn', result: 'approved', ip: hip, device: dv, mfa: 'push' });
+    add(t + 10400, 'auth', { event: 'signin', user: P, app: 'vpn', result: 'success', ip: hip, geo: 'US/Conway', device: dv, known: 'yes', mfa: 'push', ua });
+    for (let i = 0; i < 9; i++) add(t + 120000 + i * 140000 + R.int(0, 40) * 1000, 'web', { user: P, ip: priya.ip, method: 'GET', domain: 'erp.' + co, url: R.pick(['/erp/invoices', '/erp/invoices?status=open', '/erp/reports/aging']), status: 200, bytes_out: 640, bytes_in: R.int(40000, 150000), ua });
+    add(T(3, 11, 2, 49, 50), 'auth', { event: 'signout', user: P, app: 'vpn', result: 'success', ip: hip, device: dv }); }
+  // THE ATTACK
+  const A = '203.0.113.77', G = 'RO/Bucharest', UA = 'python-requests/2.31.0', DV = 'dev-9f3a';
+  const au = (t, f) => add(t, 'auth', Object.assign({ user: P, app: 'sso', ip: A, device: DV, ua: UA }, f));
+  let t = T(3, 11, 2, 55, 10);
+  au(t, { event: 'signin', result: 'failure', reason: 'bad_password', geo: G, known: 'no', mfa: '-' });
+  au(t + 38000, { event: 'signin', result: 'failure', reason: 'bad_password', geo: G, known: 'no', mfa: '-' });
+  t = T(3, 11, 2, 58, 5);
+  for (let i = 0; i < 11; i++) {
+    au(t, { event: 'signin', result: 'mfa_required', geo: G, known: 'no', mfa: 'push' });
+    au(t + 1100, { event: 'mfa_challenge', result: 'sent', mfa: 'push' });
+    const res = i < 2 ? 'denied' : (i < 10 ? 'timeout' : 'approved');
+    const rec = au(t + (res === 'timeout' ? 30000 : R.int(6, 12) * 1000), { event: 'mfa_result', result: res, mfa: 'push' });
+    if (res === 'approved') { keys.push(rec); t = rec.ts; } else t += R.int(40, 58) * 1000;
+  }
+  const k2 = au(t + 2300, { event: 'signin', result: 'success', geo: G, known: 'no', mfa: 'push' }); keys.push(k2);
+  au(t + 74000, { event: 'mfa_enroll', result: 'success', mfa: 'totp' });
+  const wb = (dt, method, url, status, bo, bi) => add(t + dt, 'web', { user: P, ip: A, method, domain: (url.startsWith('/mail') ? 'mail.' : 'erp.') + co, url, status, bytes_out: bo, bytes_in: bi, ua: UA });
+  wb(95000, 'GET', '/mail/inbox', 200, 410, 88112);
+  wb(158000, 'GET', '/mail/rules', 200, 380, 6120);
+  wb(190000, 'POST', '/mail/rules', 201, 1420, 310);
+  wb(330000, 'GET', '/erp/vendors?q=northwind', 200, 450, 41200);
+  wb(402000, 'GET', '/erp/vendors/4412', 200, 420, 18800);
+  const k3 = wb(551000, 'POST', '/erp/vendors/4412/bank-details', 200, 2210, 640); keys.push(k3);
+  wb(640000, 'GET', '/erp/payments/queue', 200, 430, 22400);
+  au(t + 700000, { event: 'signout', result: 'success' });
+  finalize(L);
+  const accounts = users.map(u => u.u).sort().concat(['svc-monitor']);
+  return {
+    id: 'c1', n: 1, level: 'Easy', title: 'The Midnight Push', co: 'Larkspur Textiles', sources: ['auth', 'web', 'endpoint', 'dns'], span: [T(3, 9, 0), T(3, 12, 0)], par: 12,
+    brief: ['Larkspur Textiles (fictional): 14 staff, SSO with push MFA. Business hours are 14:00-23:00Z.', 'Alert: a supplier says its bank details were changed. Nobody in Accounts Payable did it.', 'Logs: auth, web, endpoint, dns. Mon 03-09 to Wed 03-11, all times UTC.'],
+    recs: L, keys: keys.map(r => r.id),
+    keyWhy: ['The 11th push is approved. Ten prompts in nine minutes, two denied and eight ignored, then approved from 203.0.113.77: classic MFA fatigue.', 'First successful sign-in from Bucharest on a device never seen before, 36 minutes after priya signed in from Conway. Impossible travel, and a scripted user agent.', 'The business impact: priya.nair\'s session, from the same foreign IP, rewrites a vendor\'s bank details.'],
+    truth: { who: '0', what: '0', how: '0', when: '0', account: 'priya.nair' },
+    options: {
+      who: opts(R, ['External actor at 203.0.113.77 (Bucharest)', 'Password-spray bot at 198.51.100.200', 'Priya herself (insider fraud)', 'Travelling salesman marcus.oyelaran', 'Misconfigured monitor svc-monitor']),
+      what: opts(R, ['Account takeover to set up vendor payment fraud', 'Password-spray campaign with no success', 'Ransomware precursor', 'Bulk customer-data theft', 'False alarm: legitimate travel']),
+      how: opts(R, ['Valid password, then MFA push fatigue until the user approved', 'Stolen session cookie replayed without MFA', 'Password brute force; no MFA required', 'Malicious attachment run on the workstation', 'Shared credentials handed over by a colleague']),
+      when: opts(R, ['Wed 03-11, 02:30-03:30Z', 'Tue 03-10, 11:00-12:00Z', 'Tue 03-10, 15:00-16:00Z', 'Wed 03-11, 14:00-15:00Z', 'Mon 03-09, 21:00-22:00Z']),
+      account: accounts.map(a => ({ id: a, label: a }))
+    },
+    whenQ: 'When did the intrusion begin?',
+    story: ['03-11 02:31Z: priya signs in from home in Conway (normal).', '02:55Z: two wrong passwords from 203.0.113.77, then the right one: the password had leaked.', '02:58-03:07Z: eleven push prompts. She denies two, ignores eight, approves the last.', '03:07-03:19Z: attacker enrols a TOTP, adds a mail forwarding rule, changes vendor 4412 bank details.', 'Red herrings: 198.51.100.200 sprayed 19 account names at 11:02Z on 03-10 and never got in; marcus is really in Frankfurt on a known device.'],
+    hints: [
+      { t: 'Follow the money: which web requests change a vendor\'s bank details?', q: 'url:*bank-details*' },
+      { t: 'Check where that session came from, and which user it claims to be.', q: 'url:*bank-details* | count by user,ip' },
+      { t: 'Read that user\'s mfa_result events in the half hour before the odd IP got in.', q: 'event:mfa_result user:priya.nair after:02:30 before:03:30' }
+    ]
+  };
+}
+
+/* ---------------- CASE 2 : The Quiet Drip ---------------- */
+function case2() {
+  const { R, L, keys, add } = newCtx(2202);
+  const co = 'kestrel-marine.example';
+  const users = mkUsers(R, [
+    ['dana.whitcombe', 'FIN', 'WS-FIN-07', 0, ['mail', 'erp']], ['l.okafor', 'MKT', null, 1, ['mail', 'wiki']], ['sam.iqbal', 'IT', null, 0, ['mail', 'wiki']],
+    ['harriet.coyle', 'FIN', null, 0, ['mail', 'erp']], ['ben.adeyemi', 'OPS', null, 0, ['mail', 'erp']], ['mei.watanabe', 'HR', null, 0, ['mail', 'wiki']],
+    ['rafael.duarte', 'SLS', null, 0, ['mail', 'crm']], ['olga.petrov', 'LOG', null, 0, ['mail', 'erp']], ['kwame.asante', 'OPS', null, 0, ['mail', 'erp']],
+    ['tessa.moran', 'LEG', null, 0, ['mail', 'wiki']], ['victor.lindahl', 'ENG', null, 0, ['mail', 'wiki']], ['june.hartley', 'FIN', null, 0, ['mail', 'erp']], ['noor.rahman', 'CS', null, 0, ['mail', 'crm']]
+  ]);
+  const U = n => users.find(u => u.u === n);
+  const days = [[3, 16], [3, 17], [3, 18], [3, 19]];
+  const office = '198.51.100.10';
+  baseline(R, add, { co, users, days, office, web: [20, 28], endpoint: [12, 20], dns: [16, 24], cloud: { p: 0.6, n: 3, buckets: ['bkt-reports', 'bkt-shared', 'bkt-marketing-assets'] } });
+  const dana = U('dana.whitcombe'), D = dana.u, H = dana.host;
+  // servers: perfectly regular agent beacon (benign)
+  for (const [h, ip] of [['SRV-FILE-01', '10.20.50.5'], ['SRV-APP-02', '10.20.50.6']]) {
+    for (let t = T(3, 16, 0, R.int(0, 9)); t < T(3, 20, 0); t += 30 * 60000) add(t + R.int(0, 1) * 1000, 'dns', { host: h, ip, qname: 'agent.edr-vendor.example', qtype: 'A', rcode: 'NOERROR' });
+  }
+  // benign: svc-backup nightly 38 GB, l.okafor 1.4 GB video upload after hours
+  for (const [m, d] of [[3, 16], [3, 17], [3, 18], [3, 19]]) add(T(m, d, 7, 0, R.int(0, 40)), 'cloud', { event: 'PutObject', user: 'svc-backup', ip: office, ua: 'sync-agent/3.2', bucket: 'bkt-corp-backup', object: 'nightly/full-' + String(m).padStart(2, '0') + String(d).padStart(2, '0') + '.tar.zst', bytes: Math.round(38.2e9 * (0.97 + R.f() * 0.05)), result: 'success', keyid: 'svc-backup' });
+  { const o = U('l.okafor'); add(T(3, 17, 21, 40, 18), 'cloud', { event: 'PutObject', user: o.u, ip: o.home, ua: 'console', bucket: 'bkt-marketing-assets', object: 'media/spring-campaign-4k.mp4', bytes: 1462331904, result: 'success', keyid: 'console' }); }
+  // benign: sam.iqbal powershell from explorer, regular admin work
+  for (let i = 0; i < 6; i++) { const s = U('sam.iqbal'); add(T(3, 16 + (i % 4), 15 + i, R.int(0, 55), R.int(0, 59)), 'endpoint', { event: 'proc_start', host: s.host, user: s.u, proc: 'powershell.exe', parent: 'explorer.exe', cmd: R.pick(['powershell.exe -NoProfile -File C:\\IT\\scripts\\disk-report.ps1', 'powershell.exe Get-Service | Where Status -eq Stopped', 'powershell.exe -NoProfile -File C:\\IT\\scripts\\inventory.ps1']) }); }
+  // benign: periodic telemetry beacon, 10-min fixed interval from the IT workstation
+  { const s = U('sam.iqbal'); for (let t = T(3, 16, 14, 3); t < T(3, 16, 23, 0); t += 10 * 60000) add(t, 'dns', { host: s.host, ip: s.ip, qname: 'telemetry.itsuite.example', qtype: 'A', rcode: 'NOERROR' }); }
+  // THE ATTACK
+  const uh = (t, f) => add(t, 'endpoint', Object.assign({ host: H, user: D }, f));
+  const t0 = T(3, 17, 14, 19, 40);
+  add(t0, 'web', { user: D, ip: dana.ip, method: 'GET', domain: 'docs-transfer.example', url: '/dl/invoice_Q1_2026.docm', status: 200, bytes_out: 612, bytes_in: 184322, ua: dana.ua });
+  uh(t0 + 3000, { event: 'file_create', proc: 'chrome.exe', parent: 'explorer.exe', file: 'C:\\Users\\dana.whitcombe\\Downloads\\invoice_Q1_2026.docm' });
+  uh(t0 + 83000, { event: 'proc_start', proc: 'WINWORD.EXE', parent: 'explorer.exe', cmd: '"C:\\Program Files\\Office\\WINWORD.EXE" "C:\\Users\\dana.whitcombe\\Downloads\\invoice_Q1_2026.docm"' });
+  keys.push(uh(t0 + 121000, { event: 'proc_start', proc: 'powershell.exe', parent: 'WINWORD.EXE', cmd: 'powershell.exe -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcA...' }));
+  uh(t0 + 190000, { event: 'proc_start', proc: 'whoami.exe', parent: 'powershell.exe', cmd: 'whoami.exe /all' });
+  uh(t0 + 205000, { event: 'proc_start', proc: 'net.exe', parent: 'powershell.exe', cmd: 'net.exe user /domain' });
+  uh(t0 + 244000, { event: 'proc_start', proc: 'schtasks.exe', parent: 'powershell.exe', cmd: 'schtasks.exe /create /sc hourly /tn "SyncMetricsUpdater" /tr "powershell.exe -w hidden -File C:\\Users\\Public\\sm.ps1"' });
+  // beacons: ~5 min with +/-12% jitter
+  for (let t = T(3, 17, 14, 22, 30); t < T(3, 19, 12, 0); t += R.jit(300000, 0.12)) add(t, 'dns', { host: H, ip: dana.ip, qname: R.str(8, B32) + '.cdn-metrics-sync.example', qtype: 'TXT', rcode: 'NOERROR' });
+  // staging + exfil
+  uh(T(3, 18, 0, 49, 15), { event: 'proc_start', proc: 'cmd.exe', parent: 'powershell.exe', cmd: 'cmd.exe /c dir C:\\Finance\\Payroll\\ /s' });
+  keys.push(uh(T(3, 18, 0, 52, 40), { event: 'proc_start', proc: 'rar.exe', parent: 'powershell.exe', cmd: 'rar.exe a -r -hp******** C:\\Users\\Public\\bk.dat C:\\Finance\\Payroll\\*.xlsx' }));
+  uh(T(3, 18, 0, 53, 20), { event: 'file_create', proc: 'rar.exe', parent: 'powershell.exe', file: 'C:\\Users\\Public\\bk.dat' });
+  let first = true;
+  for (let t = T(3, 18, 1, 6, 12); t < T(3, 18, 4, 42); t += R.jit(30000, 0.4)) {
+    const q = R.str(R.int(52, 60), B32) + '.' + R.str(R.int(20, 30), B32) + '.d.cdn-metrics-sync.example';
+    const rec = add(t, 'dns', { host: H, ip: dana.ip, qname: q, qtype: R.wpick([['TXT', 6], ['CNAME', 3], ['NULL', 1]]), rcode: 'NOERROR' });
+    if (first) { keys.push(rec); first = false; }
+  }
+  finalize(L);
+  const accounts = users.map(u => u.u).sort().concat(['svc-backup']);
+  return {
+    id: 'c2', n: 2, level: 'Medium', title: 'The Quiet Drip', co: 'Kestrel Marine Supply', sources: ['web', 'endpoint', 'dns', 'cloud'], span: [T(3, 16, 0), T(3, 20, 0)], par: 18,
+    brief: ['Kestrel Marine Supply (fictional): 13 staff, two servers, a cloud bucket estate. Business hours 14:00-23:00Z.', 'Alert: the proxy shows outbound volume spikes and a threat feed flagged one DNS domain. Finance data may be leaving.', 'Logs: web, endpoint, dns, cloud. Mon 03-16 to Thu 03-19, all times UTC. Plenty here is noisy but harmless.'],
+    recs: L, keys: keys.slice().sort((a, b) => a.ts - b.ts).map(r => r.id),
+    keyWhy: ['A Word document spawning a hidden, encoded PowerShell is the entry point. Office should never have powershell.exe as a child.', 'The staging step: rar.exe packing the payroll spreadsheets into C:\\Users\\Public\\bk.dat, minutes before the tunnel starts.',
+    'The first long, high-entropy DNS query to the same domain the host had been beaconing to. Names over 100 characters on TXT lookups is a DNS tunnel carrying data.'
+    ],
+    truth: { who: '0', what: '0', how: '0', when: '0', account: 'dana.whitcombe' },
+    options: {
+      who: opts(R, ['External operator running implant on WS-FIN-07 (cdn-metrics-sync.example)', 'Insider dana.whitcombe copying data on purpose', 'Backup service svc-backup', 'Marketing user l.okafor uploading assets', 'IT admin sam.iqbal running scripts']),
+      what: opts(R, ['Data exfiltration over DNS tunnelling after macro malware', 'Bulk theft from a cloud storage bucket', 'Ransomware staging', 'Cryptominer on a workstation', 'Benign update telemetry']),
+      how: opts(R, ['Macro document spawned PowerShell, which set up DNS C2 beaconing', 'Stolen cloud access keys', 'Exploited an internet-facing web server', 'Brute-forced VPN account', 'Removable USB drive']),
+      when: opts(R, ['Tue 03-17, 14:00-15:00Z', 'Mon 03-16, 15:00-16:00Z', 'Tue 03-17, 21:00-22:00Z', 'Wed 03-18, 01:00-02:00Z', 'Wed 03-18, 07:00-08:00Z']),
+      account: accounts.map(a => ({ id: a, label: a }))
+    },
+    whenQ: 'When did the intrusion begin?',
+    story: ['03-17 14:19Z: dana downloads invoice_Q1_2026.docm from a file-transfer site.', '14:21Z: WINWORD.EXE spawns a hidden, encoded powershell.exe; recon, then a scheduled task for persistence.', '14:22Z onward: TXT lookups to cdn-metrics-sync.example about every 5 minutes with jitter: the C2 beacon.', '03-18 00:52Z: payroll sheets archived to bk.dat; from 01:06Z to 04:42Z ~30-second DNS queries with 100+ character names carry it out.', 'Red herrings: svc-backup moves ~38 GB nightly at 07:00Z; l.okafor uploads 1.4 GB of video; the servers hit their EDR vendor every 30 minutes on the dot.'],
+    hints: [
+      { t: 'Periodic is not always evil. Rank DNS domains and ask which one has no business being there.', q: 'src:dns | top sld 12' },
+      { t: 'One domain has very long names. Which host sends them, and how many?', q: 'qlen:>90 | count by host,sld' },
+      { t: 'Open that host\'s endpoint log just before its first beacon (14:22Z on 03-17). Who spawned what?', q: 'host:WS-FIN-07 event:proc_start date:03-17 after:14:15 before:14:30' }
+    ]
+  };
+}
+
+/* ---------------- CASE 3 : Two Keys, One Bucket ---------------- */
+function case3() {
+  const { R, L, keys, add } = newCtx(3303);
+  const co = 'fennimore.example';
+  const users = mkUsers(R, [
+    ['tomas.lindqvist', 'IT', 'WS-IT-02', 0, ['mail', 'wiki']], ['renee.castellan', 'SLS', 'WS-SLS-04', 1, ['mail', 'crm']], ['aaliyah.brooks', 'SLS', null, 0, ['mail', 'crm']],
+    ['peter.novak', 'FIN', null, 0, ['mail', 'erp']], ['gwen.farrow', 'MKT', null, 0, ['mail', 'wiki']], ['dmitri.sokolov', 'ENG', null, 1, ['mail', 'wiki']],
+    ['yusuf.karim', 'OPS', null, 0, ['mail', 'erp']], ['clara.eastwood', 'HR', null, 0, ['mail', 'wiki']], ['ivan.petkov', 'IT', null, 0, ['mail', 'wiki']],
+    ['megan.oduya', 'CS', null, 0, ['mail', 'crm']], ['hugo.lambert', 'SLS', null, 0, ['mail', 'crm']], ['sana.mirza', 'FIN', null, 0, ['mail', 'erp']], ['lucas.vidal', 'LEG', null, 0, ['mail', 'wiki']]
+  ]);
+  const U = n => users.find(u => u.u === n);
+  const days = [[4, 6], [4, 7], [4, 8], [4, 9], [4, 10]];
+  const office = '198.51.100.10';
+  users.forEach(u => { if (u.u === 'tomas.lindqvist') u.remote = false; });
+  baseline(R, add, { co, users, days, office, auth: 1, web: [14, 22], endpoint: [10, 16], cloud: { p: 0.7, n: 3, buckets: ['crm-exports', 'bkt-reports', 'bkt-shared'] } });
+  const tom = U('tomas.lindqvist'), ren = U('renee.castellan'), TL = tom.u, RC = ren.u;
+  const HOME = '203.0.113.140', KEY = 'AKIAFX7Q2LM9';
+  // renee's normal CRM exports (console, small)
+  for (let i = 0; i < 12; i++) { const d = 6 + (i % 5); add(T(4, d, 15 + R.int(0, 6), R.int(0, 59), R.int(0, 59)), 'cloud', { event: 'GetObject', user: RC, ip: office, ua: 'console', bucket: 'crm-exports', object: 'exports/customers_' + R.pick(['EMEA', 'NA', 'APAC']) + '_weekly.csv', bytes: R.int(4e6, 60e6), result: 'success', keyid: 'console' }); }
+  // tomas on-call VPN from home, most evenings (benign pattern)
+  for (const [d, h, mi, dur] of [[7, 1, 40, 34], [8, 2, 20, 26], [9, 1, 55, 41]]) {
+    const t = T(4, d, h, mi, R.int(0, 59));
+    add(t, 'auth', { event: 'signin', user: TL, app: 'vpn', result: 'mfa_required', ip: HOME, geo: 'US/Conway', device: tom.dev, known: 'yes', mfa: 'push', ua: tom.ua });
+    add(t + 1200, 'auth', { event: 'mfa_challenge', user: TL, app: 'vpn', result: 'sent', ip: HOME, device: tom.dev, mfa: 'push' });
+    add(t + 9000, 'auth', { event: 'mfa_result', user: TL, app: 'vpn', result: 'approved', ip: HOME, device: tom.dev, mfa: 'push' });
+    add(t + 10400, 'auth', { event: 'signin', user: TL, app: 'vpn', result: 'success', ip: HOME, geo: 'US/Conway', device: tom.dev, known: 'yes', mfa: 'push', ua: tom.ua });
+    add(t + dur * 60000, 'auth', { event: 'signout', user: TL, app: 'vpn', result: 'success', ip: HOME, device: tom.dev });
+  }
+  // tomas: HR portal visits (resigned), routine admin
+  add(T(4, 6, 15, 33, 12), 'web', { user: TL, ip: tom.ip, method: 'GET', domain: 'hr-portal.' + co, url: '/hr/notice-period', status: 200, bytes_out: 540, bytes_in: 22110, ua: tom.ua });
+  add(T(4, 6, 15, 36, 40), 'web', { user: TL, ip: tom.ip, method: 'POST', domain: 'hr-portal.' + co, url: '/hr/resignation', status: 200, bytes_out: 3100, bytes_in: 900, ua: tom.ua });
+  add(T(4, 7, 16, 12, 3), 'cloud', { event: 'ListBucket', user: TL, ip: office, ua: 'console', bucket: 'crm-exports', object: '-', bytes: 0, result: 'success', keyid: 'console' });
+  add(T(4, 6, 19, 5, 9), 'cloud', { event: 'CreateAccessKey', user: TL, target: 'svc-reports', ip: office, ua: 'console', result: 'success', keyid: 'AKIAFX1H8S3D' });
+  // spray against renee: all failures, no success
+  { let t = T(4, 8, 11, 2, 30); for (let i = 0; i < 9; i++) { t += R.int(15, 50) * 1000; add(t, 'auth', { event: 'signin', user: RC, app: 'sso', result: 'failure', reason: 'bad_password', ip: '198.51.100.55', geo: 'NL/Amsterdam', device: 'dev-0000', known: 'no', mfa: '-', ua: 'Go-http-client/1.1' }); } }
+  // renee enrols new phone via helpdesk (benign)
+  add(T(4, 8, 15, 20, 11), 'auth', { event: 'device_enroll', user: RC, app: 'sso', result: 'success', ip: office, geo: 'US/Little Rock', device: 'dev-71c2', known: 'no', mfa: 'push', ua: ren.ua });
+  // contractor audit uses the same CLI user agent (benign)
+  for (let i = 0; i < 5; i++) add(T(4, 8, 17, 10 + i * 3, 12), 'cloud', { event: i < 2 ? 'ListBucket' : 'GetObject', user: 'vendor.audit', ip: '198.51.100.90', ua: 'cloud-cli/2.15.1', bucket: 'bkt-reports', object: i < 2 ? '-' : 'reports/access-review-' + i + '.csv', bytes: i < 2 ? 0 : R.int(30000, 900000), result: 'success', keyid: 'AKIAVA2R6T7P' });
+  // renee signs out after hours legitimately
+  add(T(4, 9, 22, 48, 5), 'auth', { event: 'signout', user: RC, app: 'sso', result: 'success', ip: office, device: ren.dev });
+  // THE ACT: key minted for renee by tomas
+  add(T(4, 7, 16, 40, 31), 'web', { user: TL, ip: tom.ip, method: 'GET', domain: 'console.' + co, url: '/console/iam/users/renee.castellan', status: 200, bytes_out: 480, bytes_in: 14100, ua: tom.ua });
+  add(T(4, 7, 16, 41, 2), 'web', { user: TL, ip: tom.ip, method: 'POST', domain: 'console.' + co, url: '/console/iam/users/renee.castellan/access-keys', status: 200, bytes_out: 910, bytes_in: 1130, ua: tom.ua });
+  keys.push(add(T(4, 7, 16, 41, 3), 'cloud', { event: 'CreateAccessKey', user: TL, target: RC, ip: office, ua: 'console', result: 'success', keyid: KEY }));
+  // the exfil night: tomas on VPN from his home IP, then the key pulls 2.3 GB
+  { const t = T(4, 10, 3, 2, 14);
+    add(t, 'auth', { event: 'signin', user: TL, app: 'vpn', result: 'mfa_required', ip: HOME, geo: 'US/Conway', device: tom.dev, known: 'yes', mfa: 'push', ua: tom.ua });
+    add(t + 1200, 'auth', { event: 'mfa_challenge', user: TL, app: 'vpn', result: 'sent', ip: HOME, device: tom.dev, mfa: 'push' });
+    add(t + 8000, 'auth', { event: 'mfa_result', user: TL, app: 'vpn', result: 'approved', ip: HOME, device: tom.dev, mfa: 'push' });
+    keys.push(add(t + 9400, 'auth', { event: 'signin', user: TL, app: 'vpn', result: 'success', ip: HOME, geo: 'US/Conway', device: tom.dev, known: 'yes', mfa: 'push', ua: tom.ua }));
+    add(t + 58 * 60000, 'auth', { event: 'signout', user: TL, app: 'vpn', result: 'success', ip: HOME, device: tom.dev });
+    let first = true;
+    for (let i = 1; i <= 28; i++) {
+      const r = add(t + 6 * 60000 + i * R.int(55, 85) * 1000, 'cloud', { event: 'GetObject', user: RC, ip: HOME, ua: 'cloud-cli/2.15.1', bucket: 'crm-exports', object: 'exports/customers_full_2026Q1_part' + String(i).padStart(2, '0') + '.csv.gz', bytes: R.int(76e6, 88e6), result: 'success', keyid: KEY });
+      if (first) { keys.push(r); first = false; }
+    }
+  }
+  finalize(L);
+  const accounts = users.map(u => u.u).sort().concat(['vendor.audit', 'svc-reports']);
+  // key order: CreateAccessKey, GetObject, VPN signin
+  const ordered = keys.slice().sort((a, b) => a.ts - b.ts);
+  return {
+    id: 'c3', n: 3, level: 'Hard', title: 'Two Keys, One Bucket', co: 'Fennimore Analytics', sources: ['auth', 'web', 'endpoint', 'cloud'], span: [T(4, 6, 0), T(4, 11, 0)], par: 26,
+    brief: ['Fennimore Analytics (fictional): 13 staff. Customer exports live in the crm-exports bucket. Business hours 14:00-23:00Z.', 'Alert: 2.3 GB of customer data left the crm-exports bucket overnight, using an access key in renee.castellan\'s name.', 'Logs: auth, web, endpoint, cloud. Mon 04-06 to Fri 04-10, UTC. Is renee the thief, or was she compromised? Be careful: the obvious answer is the trap.'],
+    recs: L, keys: ordered.map(r => r.id),
+    keyWhy: ['An admin, tomas.lindqvist, minted a second access key on renee.castellan\'s account from his own console session, days before anything left. Renee never touched it.', 'That same IP is tomas\'s home address on his on-call VPN. His session opens at 03:02Z and the downloads start minutes later, on a night nobody was paged.',
+    'The key is used from 203.0.113.140 with a CLI user agent. Renee has only ever used the console from the office egress, with no auth event involved.'
+    ],
+    truth: { who: '0', what: '0', how: '0', when: '0', account: 'renee.castellan' },
+    options: {
+      who: opts(R, ['Malicious insider: tomas.lindqvist (admin, resigned)', 'External attacker who compromised renee.castellan\'s credentials', 'Insider: renee.castellan herself', 'Contractor vendor.audit', 'An automated export job']),
+      what: opts(R, ['Customer-data theft from the crm-exports bucket', 'Ransomware on file shares', 'Credential-stuffing campaign', 'Business email compromise', 'Destructive sabotage of the CRM']),
+      how: opts(R, ['Admin minted a second access key on a colleague\'s account and pulled data from home', 'Phished password plus MFA fatigue', 'Public bucket misconfiguration', 'Stolen session cookie', 'Access key leaked in a public code repository']),
+      when: opts(R, ['Tue 04-07, 16:00-17:00Z', 'Wed 04-08, 11:00-12:00Z', 'Wed 04-08, 17:00-18:00Z', 'Thu 04-09, 22:00-23:00Z', 'Mon 04-06, 15:00-16:00Z']),
+      account: accounts.map(a => ({ id: a, label: a }))
+    },
+    whenQ: 'When did the malicious activity begin?',
+    story: ['04-06: tomas files his resignation in the HR portal.', '04-07 16:41Z: from the office console, tomas creates access key AKIAFX7Q2LM9 on renee.castellan\'s account. No ticket, no reason.', '04-10 03:02Z: tomas opens a VPN session from his home IP 203.0.113.140 (his usual on-call pattern, minus a page).', '03:08-03:40Z: 28 x ~80 MB GetObject from crm-exports using that key, from the same IP, with a CLI user agent.', 'Red herrings: 198.51.100.55 sprayed renee at 11:02Z on 04-08 and never got past the password; vendor.audit uses the same CLI user agent for a legitimate review; renee enrolled a new phone via the helpdesk.'],
+    hints: [
+      { t: 'Follow the bytes: which keys and users pulled data from crm-exports, and from which IPs?', q: 'bucket:crm-exports event:GetObject | top ip 5' },
+      { t: 'Pivot that IP across every source. Who else was ever on it?', q: 'ip:203.0.113.140 | count by src,user' },
+      { t: 'Who created that access key, and when? Compare with what renee\'s own auth events show that night.', q: 'event:CreateAccessKey' }
+    ]
+  };
+}
+
+function buildCases() { return [case1(), case2(), case3()]; }
+
+/* ===== LogSleuth query engine: tokenizer + parser + evaluator (no eval) ===== */
+const ORDER = {
+  auth: ['event', 'user', 'app', 'result', 'reason', 'ip', 'geo', 'device', 'known', 'mfa', 'ua'],
+  web: ['user', 'ip', 'method', 'domain', 'url', 'status', 'bytes_out', 'bytes_in', 'ua'],
+  endpoint: ['event', 'host', 'user', 'proc', 'parent', 'cmd', 'file'],
+  dns: ['host', 'ip', 'qname', 'qtype', 'rcode'],
+  cloud: ['event', 'user', 'target', 'ip', 'ua', 'bucket', 'object', 'bytes', 'result', 'keyid']
+};
+const FIELD_HELP = {
+  src: 'log source', event: 'event type', user: 'account', ip: 'client / source IP', host: 'workstation or server', geo: 'country/city', device: 'device id', known: 'device seen before? yes/no',
+  mfa: 'mfa method', app: 'application', result: 'outcome', reason: 'failure reason', ua: 'user agent', method: 'HTTP method', domain: 'HTTP host', url: 'URL path',
+  status: 'HTTP status (numeric)', bytes_out: 'bytes sent (numeric)', bytes_in: 'bytes received (numeric)', proc: 'process image', parent: 'parent process', cmd: 'command line', file: 'file path',
+  qname: 'DNS name asked', qtype: 'DNS record type', rcode: 'DNS response code', sld: 'registered domain', qlen: 'DNS name length (numeric)', bucket: 'cloud bucket', object: 'object key',
+  bytes: 'bytes moved (numeric)', target: 'account acted upon', keyid: 'access key / session'
+};
+const FIELDS = Object.keys(FIELD_HELP);
+const NUMERIC = new Set(['status', 'bytes_out', 'bytes_in', 'bytes', 'qlen']);
+const SUBSTR = new Set(['cmd', 'ua', 'url', 'file', 'object']);
+const TIMEF = ['after', 'before', 'date'];
+
+function fmtMonth(ts) { const d = new Date(ts); return String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0'); }
+function fmtTime(ts) { const d = new Date(ts); return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0') + ':' + String(d.getUTCSeconds()).padStart(2, '0'); }
+function fmtVal(v) { v = String(v); return /[\s"=]/.test(v) ? '"' + v.replace(/"/g, "'") + '"' : v; }
+function segs(r) {
+  const out = [], seen = new Set();
+  const keys = (ORDER[r.src] || []).concat(Object.keys(r.f).filter(k => k !== 'src' && !(ORDER[r.src] || []).includes(k) && k !== 'sld' && k !== 'qlen'));
+  for (const k of keys) { if (r.f[k] === undefined || seen.has(k)) continue; seen.add(k); out.push([k, r.f[k]]); }
+  return out;
+}
+function prep(recs) {
+  for (const r of recs) {
+    r.l = {}; for (const k in r.f) r.l[k] = String(r.f[k]).toLowerCase();
+    r.line = segs(r).map(([k, v]) => k + '=' + fmtVal(v)).join(' ');
+    r.text = (r.src + ' ' + r.line + ' sld=' + (r.f.sld || '')).toLowerCase();
+    r.tod = ((r.ts % 86400000) / 1000) | 0;
+    r.dstr = fmtMonth(r.ts);
+  }
+}
+function splitPipes(s) { const out = []; let cur = '', q = false; for (const c of s) { if (c === '"') q = !q; if (c === '|' && !q) { out.push(cur); cur = ''; } else cur += c; } out.push(cur); return out.map(x => x.trim()); }
+function words(s) { const out = []; let cur = '', q = false; for (const c of s) { if (c === '"') { q = !q; cur += c; continue; } if (!q && /\s/.test(c)) { if (cur) out.push(cur); cur = ''; continue; } cur += c; } if (cur) out.push(cur); return out; }
+const unq = v => v.replace(/^"/, '').replace(/"$/, '');
+function parseTime(v) {
+  let m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(v); if (m) return { tod: (+m[1]) * 3600 + (+m[2]) * 60 + (+(m[3] || 0)) };
+  m = /^(\d{2})-(\d{2})T(\d{1,2}):(\d{2})$/.exec(v); if (m) return { abs: Date.UTC(2026, +m[1] - 1, +m[2], +m[3], +m[4]) };
+  return null;
+}
+function parseFilter(str) {
+  const ws = words(str), groups = [[]];
+  for (let w of ws) {
+    if (w === 'OR') { groups.push([]); continue; }
+    let neg = false; if (w.length > 1 && w[0] === '-') { neg = true; w = w.slice(1); }
+    const m = /^([a-z_]+):(.*)$/i.exec(w);
+    let pred, label;
+    if (m && !m[2].startsWith('//')) {
+      const f = m[1].toLowerCase(); let v = unq(m[2]);
+      if (v === '' ) throw new Error('"' + f + ':" needs a value');
+      if (TIMEF.includes(f)) {
+        if (f === 'date') { const d = v.length > 5 ? v.slice(5) : v; if (!/^\d{2}-\d{2}$/.test(d)) throw new Error('date: use MM-DD, e.g. date:03-11'); pred = r => r.dstr === d; }
+        else { const t = parseTime(v); if (!t) throw new Error(f + ': use HH:MM or MM-DDTHH:MM, e.g. ' + f + ':03:30');
+          if (f === 'after') pred = t.abs !== undefined ? r => r.ts >= t.abs : (r => r.tod >= t.tod);
+          else pred = t.abs !== undefined ? (r => r.ts <= t.abs + 59999) : (r => r.tod <= t.tod + 59);
+          pred.tod = t; pred.kind = f; }
+      } else if (FIELDS.includes(f)) {
+        const lv = v.toLowerCase();
+        const cm = NUMERIC.has(f) && /^(>=|<=|>|<|=)?(\d+)$/.exec(v);
+        if (cm) { const n = +cm[2], op = cm[1] || '='; pred = r => { const x = r.f[f]; if (x === undefined) return false; return op === '>' ? x > n : op === '<' ? x < n : op === '>=' ? x >= n : op === '<=' ? x <= n : x === n; }; }
+        else if (lv.includes('*')) { const re = new RegExp('^' + lv.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'); pred = r => r.l[f] !== undefined && re.test(r.l[f]); }
+        else if (SUBSTR.has(f)) pred = r => r.l[f] !== undefined && r.l[f].includes(lv);
+        else pred = r => r.l[f] === lv;
+      } else throw new Error('Unknown field "' + f + '". Try: ' + FIELDS.slice(0, 8).join(', ') + '...');
+    } else { const lv = unq(w).toLowerCase(); if (!lv) continue; pred = r => r.text.includes(lv); }
+    const p = neg ? (r => !pred(r)) : pred; groups[groups.length - 1].push(p);
+  }
+  return groups.filter(g => g.length);
+}
+function runQuery(C, q, pool) {
+  const stages = splitPipes(q);
+  const groups = parseFilter(stages[0]);
+  const recs = pool || C.recs;
+  const matched = groups.length ? recs.filter(r => groups.some(g => g.every(p => p(r)))) : recs;
+  let cur = { kind: 'lines', rows: matched }, aggSeen = false;
+  for (const st of stages.slice(1)) {
+    const w = words(st), cmd = (w[0] || '').toLowerCase();
+    if (!cmd) throw new Error('Empty pipe stage. After | use: count by <field>, top <field>, head <n>');
+    if (cmd === 'head') {
+      const n = +(w[1] || 20); if (!(n > 0)) throw new Error('head needs a number, e.g. | head 20');
+      cur = cur.kind === 'lines' ? { kind: 'lines', rows: cur.rows.slice(0, n) } : Object.assign({}, cur, { rows: cur.rows.slice(0, n) });
+    } else if (cmd === 'count' || cmd === 'top') {
+      if (cur.kind !== 'lines') throw new Error('Only one count/top per query; | head n is fine afterwards');
+      let fl, lim = 500;
+      if (cmd === 'count') { if (w.length === 1) { cur = { kind: 'agg', title: 'count', cols: ['count'], rows: [{ vals: [], n: cur.rows.length, terms: [] }], total: cur.rows.length }; continue; }
+        if ((w[1] || '').toLowerCase() !== 'by' || !w[2]) throw new Error('Use: | count by <field>[,<field>]'); fl = w.slice(2).join('').split(','); }
+      else { if (!w[1]) throw new Error('Use: | top <field> [n]'); fl = w[1].split(','); lim = +(w[2] || 10); if (!(lim > 0)) throw new Error('top: n must be a number'); }
+      fl = fl.map(x => x.toLowerCase().trim()).filter(Boolean);
+      for (const f of fl) if (!FIELDS.includes(f)) throw new Error('Unknown field "' + f + '" in ' + cmd + '. Try: ' + FIELDS.slice(0, 8).join(', ') + '...');
+      const map = new Map();
+      for (const r of cur.rows) { const vals = fl.map(f => r.f[f] === undefined ? '-' : String(r.f[f])); const k = vals.join('\u0001'); const e = map.get(k); if (e) e.n++; else map.set(k, { vals, n: 1 }); }
+      const rows = [...map.values()].sort((a, b) => b.n - a.n || (a.vals.join() < b.vals.join() ? -1 : 1)).slice(0, lim);
+      rows.forEach(e => e.terms = fl.map((f, i) => e.vals[i] === '-' ? null : f + ':' + fmtVal(e.vals[i])).filter(Boolean));
+      cur = { kind: 'agg', title: cmd + ' ' + (cmd === 'top' ? fl.join(',') : 'by ' + fl.join(',')), cols: fl.concat(['count']), rows, total: cur.rows.length, distinct: map.size };
+    } else throw new Error('Unknown pipe command "' + cmd + '". Use: count by <field>, top <field> [n], head <n>');
+  }
+  cur.matched = matched; cur.q = q; return cur;
+}
+/* ----- autocomplete ----- */
+function valueIndex(C, f) {
+  C.vidx = C.vidx || {};
+  if (!C.vidx[f]) { const m = new Map(); for (const r of C.recs) { const v = r.f[f]; if (v !== undefined) m.set(String(v), (m.get(String(v)) || 0) + 1); } C.vidx[f] = [...m].sort((a, b) => b[1] - a[1]); }
+  return C.vidx[f];
+}
+function suggest(C, text) {
+  const out = [];
+  if (!text.trim()) return [
+    { label: 'event:mfa_result | count by result', insert: 'event:mfa_result | count by result', hint: 'example', whole: 1 },
+    { label: 'powershell', insert: 'powershell', hint: 'keyword', whole: 1 },
+    { label: 'src:dns | top qname 10', insert: 'src:dns | top qname 10', hint: 'example', whole: 1 },
+    { label: 'bytes:>1000000 after:00:00 before:12:00', insert: 'bytes:>1000000 after:00:00 before:12:00', hint: 'example', whole: 1 }];
+  let pipeAt = -1, q = false; for (let i = 0; i < text.length; i++) { if (text[i] === '"') q = !q; if (text[i] === '|' && !q) pipeAt = i; }
+  const seg = pipeAt >= 0 ? text.slice(pipeAt + 1) : text;
+  const m = /(\S*)$/.exec(seg); const tok = m[1]; const prior = words(seg.slice(0, m.index)); const base = text.slice(0, text.length - tok.length);
+  const add = (label, insert, hint) => out.push({ label, insert: base + insert, hint });
+  if (pipeAt >= 0) {
+    const cmd = (prior[0] || '').toLowerCase(), lt = tok.toLowerCase();
+    if (!prior.length) for (const c of [['count by ', 'count by <field>'], ['count', 'count lines'], ['top ', 'top <field> [n]'], ['head ', 'first n rows']]) { if (c[0].startsWith(lt)) add(c[0].trim(), c[0], c[1]); }
+    else if (cmd === 'count' && prior.length === 1) { if ('by'.startsWith(lt)) add('by', 'by ', 'group by field'); }
+    else if ((cmd === 'count' && prior.length >= 2 && (prior[1] || '').toLowerCase() === 'by' && prior.length === 2) || (cmd === 'top' && prior.length === 1)) {
+      const parts = lt.split(','), last = parts.pop(), pre = tok.slice(0, tok.length - last.length);
+      for (const f of FIELDS) if (f.startsWith(last)) add(f, pre + f + ' ', FIELD_HELP[f]);
+    }
+    return out.slice(0, 8);
+  }
+  let t = tok, neg = ''; if (t.startsWith('-')) { neg = '-'; t = t.slice(1); }
+  if (t.startsWith('"')) return [];
+  const ci = t.indexOf(':');
+  if (ci > 0) {
+    const f = t.slice(0, ci).toLowerCase(), v = t.slice(ci + 1).replace(/^"/, '').toLowerCase();
+    if (f === 'date') { const ds = [...new Set(C.recs.map(r => r.dstr))]; for (const d of ds) if (d.startsWith(v)) add('date:' + d, neg + 'date:' + d + ' ', 'UTC day'); }
+    else if (f === 'after' || f === 'before') { for (const h of ['00:00', '03:00', '06:00', '12:00', '14:00', '23:00']) if (h.startsWith(v)) add(f + ':' + h, neg + f + ':' + h + ' ', 'HH:MM, UTC'); }
+    else if (FIELDS.includes(f)) {
+      if (NUMERIC.has(f) && !v) { add(f + ':>1000000', neg + f + ':>1000000 ', 'numeric compare'); }
+      let n = 0; for (const [val, c] of valueIndex(C, f)) { const lv = val.toLowerCase(); if (lv.startsWith(v) || (v.length > 1 && lv.includes(v))) { if (val.length > 70) continue; add(f + ':' + val, neg + f + ':' + fmtVal(val) + ' ', c + 'x'); if (++n >= 8) break; } }
+    }
+    return out.slice(0, 8);
+  }
+  const lt = t.toLowerCase();
+  if (!t) { if (text.trim() && !text.endsWith('|')) { add('| count by ...', '| count by ', 'aggregate'); add('| top ...', '| top ', 'rank values'); } for (const f of ['user', 'ip', 'event', 'src']) add(f + ':', f + ':', FIELD_HELP[f]); return out; }
+  for (const f of FIELDS.concat(TIMEF)) if (f.startsWith(lt)) add(f + ':', neg + f + ':', FIELD_HELP[f] || (f === 'date' ? 'MM-DD (UTC)' : 'HH:MM (UTC)'));
+  return out.slice(0, 8);
+}
+
+/* ===== LogSleuth UI ===== */
+(function () {
+  'use strict';
+  const $ = (s, r) => (r || document).querySelector(s), $$ = (s, r) => [...(r || document).querySelectorAll(s)];
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const narrow = () => matchMedia('(max-width:900px)').matches;
+  const LS = 'logsleuth.v1';
+  const CASES = buildCases(); CASES.forEach(c => { prep(c.recs); c.byId = new Map(c.recs.map(r => [r.id, r])); });
+  const HINT_COST = [20, 40, 60];
+  let S = (function () { try { const j = JSON.parse(localStorage.getItem(LS)); if (j && j.v === 1 && j.cases) return j; } catch (e) { } return { v: 1, cur: 'c1', crt: true, phos: 'green', sound: false, cases: {} }; })();
+  let C = CASES.find(c => c.id === S.cur) || CASES[0];
+  let _t; function save() { clearTimeout(_t); _t = setTimeout(() => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { } }, 120); }
+  function st() { if (!S.cases[C.id]) S.cases[C.id] = { cards: [{ id: 'brief', t: 'brief', x: 12, y: 12 }], strings: [], queries: 0, hints: 0, q: '', hist: [], hunch: {}, result: null, seq: 1 }; return S.cases[C.id]; }
+  const $q = $('#q'), $sug = $('#sug'), $qmsg = $('#qmsg'), $res = $('#results'), $sp = $('#spacer'), $deck = $('#deck');
+  const aggBox = document.createElement('div'); aggBox.className = 'agg'; aggBox.hidden = true; $res.appendChild(aggBox);
+  let view = null, srcOff = new Set(), armed = null, filterMode = false;
+
+  /* ---------- toast + sound ---------- */
+  let _tt;
+  function toast(msg, label, fn) { const t = $('#toast'); t.textContent = msg; if (label) { const b = document.createElement('button'); b.textContent = label; b.onclick = () => { fn(); t.classList.remove('on'); }; t.appendChild(b); } t.classList.add('on'); clearTimeout(_tt); _tt = setTimeout(() => t.classList.remove('on'), label ? 5200 : 2600); }
+  let AC = null;
+  function snd(kind) {
+    if (!S.sound) return;
+    try {
+      AC = AC || new (window.AudioContext || window.webkitAudioContext)(); const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain(); o.connect(g); g.connect(AC.destination);
+      if (kind === 'pin') { o.type = 'sine'; o.frequency.setValueAtTime(190, t); o.frequency.exponentialRampToValueAtTime(55, t + .09); g.gain.setValueAtTime(.25, t); g.gain.exponentialRampToValueAtTime(.001, t + .12); o.start(t); o.stop(t + .13); }
+      else if (kind === 'twang') { o.type = 'triangle'; o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(210, t + .5); const l = AC.createOscillator(), lg = AC.createGain(); l.frequency.value = 24; lg.gain.value = 14; l.connect(lg); lg.connect(o.frequency); l.start(t); l.stop(t + .6); g.gain.setValueAtTime(.18, t); g.gain.exponentialRampToValueAtTime(.001, t + .55); o.start(t); o.stop(t + .6); }
+      else if (kind === 'cut') { o.type = 'square'; o.frequency.setValueAtTime(900, t); o.frequency.exponentialRampToValueAtTime(200, t + .06); g.gain.setValueAtTime(.08, t); g.gain.exponentialRampToValueAtTime(.001, t + .08); o.start(t); o.stop(t + .09); }
+      else { o.type = 'sawtooth'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(40, t + .18); g.gain.setValueAtTime(.3, t); g.gain.exponentialRampToValueAtTime(.001, t + .22); o.start(t); o.stop(t + .24); }
+    } catch (e) { }
+  }
+
+  /* ---------- tabs / header ---------- */
+  function renderTabs() {
+    $('#tabs').innerHTML = CASES.map(c => { const r = (S.cases[c.id] || {}).result; return `<button class="tab${r ? ' done' : ''}" role="tab" id="tab-${c.id}" data-id="${c.id}" aria-selected="${c.id === C.id}" tabindex="${c.id === C.id ? 0 : -1}"><span class="tt">${esc(c.title)}</span><small>Case 0${c.n} &middot; ${c.level}${r ? ' &middot; ' + r.total + ' pts' : ''}</small><span class="st">FILED</span></button>`; }).join('');
+  }
+  $('#tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b && b.dataset.id !== C.id) switchCase(b.dataset.id); });
+  $('#tabs').addEventListener('keydown', e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const i = CASES.indexOf(C), j = (i + (e.key === 'ArrowRight' ? 1 : CASES.length - 1)) % CASES.length; switchCase(CASES[j].id); $('#tab-' + CASES[j].id).focus(); } });
+  function switchCase(id) { C = CASES.find(c => c.id === id); S.cur = id; armed = null; srcOff = new Set(); renderAll(); save(); }
+  function updateStats() {
+    const s = st(); $('#nq').textContent = s.queries; $('#nh').textContent = s.hints;
+    const pins = s.cards.filter(c => c.t === 'log').length; $('#mbadge').textContent = pins; $('#bstat').textContent = pins + ' pinned · ' + s.strings.length + ' string' + (s.strings.length === 1 ? '' : 's');
+    const bh = $('#bHint'); bh.disabled = !!s.result || s.hints >= 3; bh.textContent = s.result ? 'Hint' : s.hints >= 3 ? 'No more hints' : 'Hint (-' + HINT_COST[s.hints] + ')';
+    $('#bHunch').textContent = s.result ? 'See verdict' : 'File a hunch';
+    $('#empty').style.display = s.cards.length > 1 ? 'none' : '';
+  }
+  $('#bCrt').onclick = () => { S.crt = !S.crt; applyPrefs(); save(); };
+  $('#bPh').onclick = () => { S.phos = S.phos === 'green' ? 'amber' : 'green'; applyPrefs(); save(); };
+  $('#bSnd').onclick = () => { S.sound = !S.sound; applyPrefs(); save(); if (S.sound) snd('pin'); };
+  function applyPrefs() {
+    document.body.classList.toggle('nocrt', !S.crt); document.body.classList.toggle('amber', S.phos === 'amber');
+    $('#bCrt').setAttribute('aria-pressed', S.crt); $('#bCrt').textContent = S.crt ? 'CRT on' : 'CRT off';
+    $('#bPh').textContent = S.phos === 'green' ? 'Green' : 'Amber'; $('#bSnd').setAttribute('aria-pressed', S.sound); $('#bSnd').textContent = S.sound ? 'Sound on' : 'Sound off';
+  }
+  let rst = 0;
+  $('#bReset').onclick = () => { const b = $('#bReset'); if (!rst) { b.textContent = 'Sure? Click again'; rst = setTimeout(() => { rst = 0; b.textContent = 'Reset case'; }, 3000); return; } clearTimeout(rst); rst = 0; b.textContent = 'Reset case'; delete S.cases[C.id]; armed = null; renderAll(); save(); toast('Case reset. Fresh file, fresh coffee.'); };
+  $$('.mnav button[data-v]').forEach(b => b.onclick = () => setView(b.dataset.v));
+  function setView(v) { $deck.dataset.view = v; $$('.mnav button[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === v)); if (v === 'board') { layoutCanvas(); drawStrings(); } else drawRows(); }
+  $('#mHunch').onclick = openHunch;
+
+  /* ---------- chips ---------- */
+  function renderChips() {
+    const cnt = {}; C.recs.forEach(r => cnt[r.src] = (cnt[r.src] || 0) + 1);
+    $('#chips').innerHTML = C.sources.map(s => `<button class="chip" data-s="${s}" aria-pressed="${!srcOff.has(s)}">${s}<i>${cnt[s].toLocaleString()}</i></button>`).join('');
+  }
+  $('#chips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; const s = b.dataset.s; if (srcOff.has(s)) srcOff.delete(s); else srcOff.add(s); if (srcOff.size >= C.sources.length) srcOff.clear(); renderChips(); execute(false); });
+
+  /* ---------- query execution ---------- */
+  function activeRecs() { return srcOff.size ? C.recs.filter(r => !srcOff.has(r.src)) : C.recs; }
+  function execute(announce) {
+    const q = $q.value;
+    try {
+      const res = runQuery(C, q, activeRecs()); view = res; $qmsg.className = 'qmsg';
+      if (announce) $qmsg.textContent = res.kind === 'agg' ? res.title + ': ' + (res.distinct || res.rows.length) + ' groups from ' + res.total.toLocaleString() + ' lines. Click a row to filter.' : (q.trim() ? res.rows.length.toLocaleString() + ' lines match.' : 'Showing everything. Type a query, press Enter.'); else $qmsg.textContent = '';
+      renderView(); return true;
+    } catch (e) { $qmsg.className = 'qmsg err'; $qmsg.textContent = e.message; return false; }
+  }
+  function commit(q) {
+    if (q != null) $q.value = q; const s = st(), text = $q.value.trim(); s.q = $q.value; hpos = -1;
+    const ok = execute(true);
+    if (ok && text && s.hist[s.hist.length - 1] !== text) { s.queries++; s.hist.push(text); if (s.hist.length > 80) s.hist.shift(); }
+    closeSug(); updateStats(); save();
+  }
+  let hpos = -1, _lt;
+  function filterPart(q) { return splitPipes(q); }
+  function addTerms(terms, dropPipes) {
+    const parts = splitPipes($q.value); let f = parts[0]; const rest = dropPipes ? [] : parts.slice(1);
+    for (const t of terms) { if (!words(f).includes(t)) f = (f + ' ' + t).trim(); }
+    commit(f + (rest.length ? ' | ' + rest.join(' | ') : ''));
+  }
+  function setTime(m, hh, mi) {
+    const parts = splitPipes($q.value); const keep = words(parts[0]).filter(w => !/^-?(date|after|before):/i.test(w));
+    commit(keep.concat(['date:' + m, 'after:' + hh + ':00', 'before:' + hh + ':59']).join(' ') + (parts.length > 1 ? ' | ' + parts.slice(1).join(' | ') : ''));
+  }
+
+  /* ---------- results rendering ---------- */
+  const ROW = 26;
+  function pinSet() { return new Set(st().cards.filter(c => c.t === 'log').map(c => c.lid)); }
+  function renderView() {
+    const lines = view.kind === 'lines';
+    $sp.style.display = lines ? '' : 'none'; aggBox.hidden = lines; $('#bPinRes').hidden = lines;
+    if (lines) { $sp.style.height = view.rows.length * ROW + 'px'; $res.scrollTop = Math.min($res.scrollTop, Math.max(0, view.rows.length * ROW)); drawRows(); $('#count').textContent = view.rows.length.toLocaleString() + ' of ' + C.recs.length.toLocaleString() + ' lines' + (view.rows.length ? '' : ' - no match'); if (!view.rows.length) $sp.innerHTML = '<div class="none">No lines match. Loosen a filter or check the field name.</div>'; }
+    else {
+      const mx = Math.max(1, ...view.rows.map(r => r.n));
+      aggBox.innerHTML = '<h4>' + esc(view.title) + ' &middot; ' + view.total.toLocaleString() + ' lines</h4>' + (view.rows.length ? view.rows.map((r, i) => `<div class="arow" role="button" tabindex="0" data-i="${i}" title="Filter to this value"><i class="bar" style="width:${Math.max(2, r.n / mx * 100)}%"></i><span>${esc(r.vals.length ? r.vals.join('  /  ') : 'all lines')}</span><b>${r.n.toLocaleString()}</b></div>`).join('') : '<div class="none">Nothing to count.</div>');
+      $('#count').textContent = view.rows.length + ' groups'; $res.scrollTop = 0;
+    }
+    drawHisto();
+  }
+  function drawRows() {
+    if (!view || view.kind !== 'lines' || !view.rows.length) return;
+    const rows = view.rows, n = rows.length, top = $res.scrollTop, h = $res.clientHeight || 420;
+    const a = Math.max(0, Math.floor(top / ROW) - 6), b = Math.min(n, Math.ceil((top + h) / ROW) + 6), pins = pinSet();
+    const ae = document.activeElement, fid = ae && ae.classList && ae.classList.contains('row') ? ae.dataset.i : null; let html = '';
+    for (let i = a; i < b; i++) {
+      const r = rows[i], p = pins.has(r.id);
+      html += `<div class="row${p ? ' pinned' : ''}" role="button" tabindex="0" aria-pressed="${p}" data-i="${i}" data-id="${r.id}" style="top:${i * ROW}px" title="${esc(r.line)}"><i class="pi"></i><span class="ts">${fmtMonth(r.ts)} ${fmtTime(r.ts)}</span><span class="sr s-${r.src}">${r.src}</span><span class="msg">${lineHTML(r)}</span></div>`;
+    }
+    $sp.innerHTML = html; if (fid !== null) { const el = $sp.querySelector('[data-i="' + fid + '"]'); if (el) el.focus({ preventScroll: true }); }
+  }
+  function lineHTML(r) { return segs(r).map(([k, v]) => `<span class="k">${k}=</span><span class="v" data-f="${k}" data-v="${esc(v)}">${esc(v)}</span>`).join(' '); }
+  let _raf = 0; $res.addEventListener('scroll', () => { if (_raf) return; _raf = requestAnimationFrame(() => { _raf = 0; drawRows(); }); });
+  $res.addEventListener('click', e => {
+    const v = e.target.closest('.v'); if (v && (e.shiftKey || e.altKey || filterMode)) { e.stopPropagation(); addTerms([v.dataset.f + ':' + fmtVal(v.dataset.v)], false); return; }
+    const row = e.target.closest('.row'); if (row) { togglePin(+row.dataset.id); return; }
+    const ar = e.target.closest('.arow'); if (ar) { const r = view.rows[+ar.dataset.i]; if (r.terms.length) addTerms(r.terms, true); }
+  });
+  $res.addEventListener('keydown', e => {
+    const row = e.target.closest('.row'), ar = e.target.closest('.arow');
+    if (e.key === 'Enter' || e.key === ' ') { if (row) { e.preventDefault(); togglePin(+row.dataset.id); } else if (ar) { e.preventDefault(); ar.click(); } }
+    else if (row && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      e.preventDefault(); const j = +row.dataset.i + (e.key === 'ArrowDown' ? 1 : -1); if (j < 0 || j >= view.rows.length) return; const h = $res.clientHeight;
+      if (j * ROW < $res.scrollTop) $res.scrollTop = j * ROW; else if ((j + 1) * ROW > $res.scrollTop + h) $res.scrollTop = (j + 1) * ROW - h; drawRows(); const el = $sp.querySelector('[data-i="' + j + '"]'); if (el) el.focus({ preventScroll: true });
+    }
+  });
+  function drawHisto() {
+    const hb = $('#histo'), s0 = C.span[0], n = Math.round((C.span[1] - s0) / 3600000), bins = new Array(n).fill(0);
+    for (const r of view.matched) { const i = Math.floor((r.ts - s0) / 3600000); if (i >= 0 && i < n) bins[i]++; }
+    const mx = Math.max(1, ...bins); hb.innerHTML = bins.map((c, i) => { const ts = s0 + i * 3600000, d = new Date(ts); return `<i class="${d.getUTCHours() === 0 ? 'dm' : ''}" data-m="${fmtMonth(ts)}" data-h="${String(d.getUTCHours()).padStart(2, '0')}" style="height:${c ? Math.max(8, c / mx * 100) : 2}%" title="${fmtMonth(ts)} ${String(d.getUTCHours()).padStart(2, '0')}:00Z - ${c} lines"></i>`; }).join('');
+  }
+  $('#histo').addEventListener('click', e => { const b = e.target.closest('i'); if (b) setTime(b.dataset.m, b.dataset.h); });
+  $('#bMode').onclick = () => { filterMode = !filterMode; $('#bMode').setAttribute('aria-pressed', filterMode); $('#bMode').textContent = filterMode ? 'Value click: filters' : 'Value click: pins'; };
+  $('#bPinRes').onclick = () => {
+    if (!view || view.kind !== 'agg') return; const s = st(); const top = view.rows.slice(0, 3).map(r => (r.vals.join('/') || 'all') + ' x' + r.n).join('; ');
+    const p = slot(); s.cards.push({ id: 'n' + s.seq++, t: 'note', x: p.x, y: p.y, text: ('[' + $q.value.trim() + '] ' + top).slice(0, 190), fresh: 1 }); renderBoard(); save(); snd('pin'); toast('Result pinned as a sticky note.');
+  };
+
+  /* ---------- autocomplete ---------- */
+  let sugs = [], sel = -1;
+  function renderSug() {
+    sugs = suggest(C, $q.value); sel = -1; if (!sugs.length || document.activeElement !== $q) { closeSug(); return; }
+    $sug.innerHTML = sugs.map((s, i) => `<li role="option" id="sg${i}" data-i="${i}" aria-selected="false"><span>${esc(s.label)}</span><small>${esc(s.hint || '')}</small></li>`).join(''); $sug.hidden = false; $q.setAttribute('aria-expanded', 'true');
+  }
+  function closeSug() { $sug.hidden = true; $q.setAttribute('aria-expanded', 'false'); $q.removeAttribute('aria-activedescendant'); sel = -1; }
+  function pick(i) { const s = sugs[i]; if (!s) return; $q.value = s.insert; $q.focus(); onInput(); }
+  function moveSel(d) { sel = (sel + d + sugs.length) % sugs.length; $$('#sug li').forEach((li, i) => li.setAttribute('aria-selected', i === sel)); $q.setAttribute('aria-activedescendant', 'sg' + sel); }
+  $sug.addEventListener('mousedown', e => { e.preventDefault(); const li = e.target.closest('li'); if (li) pick(+li.dataset.i); });
+  function onInput() { renderSug(); clearTimeout(_lt); _lt = setTimeout(() => execute(false), 90); st().q = $q.value; save(); }
+  $q.addEventListener('input', onInput); $q.addEventListener('focus', renderSug); $q.addEventListener('blur', () => setTimeout(closeSug, 120));
+  $q.addEventListener('keydown', e => {
+    const open = !$sug.hidden;
+    if (e.key === 'ArrowDown' && open) { e.preventDefault(); moveSel(1); }
+    else if (e.key === 'ArrowUp' && open) { e.preventDefault(); moveSel(-1); }
+    else if (e.key === 'Tab' && open) { e.preventDefault(); pick(sel >= 0 ? sel : 0); }
+    else if (e.key === 'Escape') { if (open) closeSug(); else { $q.value = ''; onInput(); } }
+    else if (e.key === 'Enter') { e.preventDefault(); if (open && sel >= 0) pick(sel); else commit(); }
+    else if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !open) { const h = st().hist; if (!h.length) return; e.preventDefault(); hpos = e.key === 'ArrowUp' ? (hpos < 0 ? h.length - 1 : Math.max(0, hpos - 1)) : (hpos < 0 ? -1 : hpos + 1); if (hpos >= h.length) hpos = -1; $q.value = hpos < 0 ? '' : h[hpos]; execute(false); }
+  });
+  $('#bRun').onclick = () => commit();
+  document.addEventListener('keydown', e => { if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !$('#hunch').open) { e.preventDefault(); if (narrow()) setView('term'); $q.focus(); } if (e.key === 'Escape' && armed) { armed = null; $$('.pinhead.armed').forEach(p => p.classList.remove('armed')); } });
+
+  /* ---------- hints ---------- */
+  function renderHints() {
+    const s = st(); $('#hints').innerHTML = C.hints.slice(0, s.hints).map((h, i) => `<div class="hint"><b>HINT ${i + 1}</b> ${esc(h.t)} <button data-q="${esc(h.q)}">run it</button></div>`).join('');
+  }
+  $('#hints').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { if (narrow()) setView('term'); commit(b.dataset.q); } });
+  $('#bHint').onclick = () => { const s = st(); if (s.result || s.hints >= 3) return; s.hints++; renderHints(); updateStats(); save(); if (narrow()) setView('term'); toast('Hint ' + s.hints + ' revealed (-' + HINT_COST[s.hints - 1] + ' pts).'); };
+
+  /* ---------- corkboard ---------- */
+  const $canvas = $('#canvas'), $scroller = $('#scroller'), $svg = $('#strings');
+  const cardOf = id => st().cards.find(c => c.id === id);
+  const cw = c => c.t === 'note' ? 178 : c.t === 'brief' ? 256 : 212;
+  const rot = id => { let h = 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) | 0; return (((h % 5) + 5) % 5 - 2) * 0.7; };
+  function slot() {
+    const W = $scroller.clientWidth || 520, cols = Math.max(1, Math.floor((W - 12) / 226)), cs = st().cards;
+    for (let i = 0; ; i++) { const x = 12 + (i % cols) * 226, y = 12 + Math.floor(i / cols) * 200; if (x < 285 && y < 215) continue; if (!cs.some(c => Math.abs(c.x - x) < 110 && Math.abs(c.y - y) < 80)) return { x, y }; }
+  }
+  function togglePin(rid) {
+    const s = st(), ex = s.cards.find(c => c.t === 'log' && c.lid === rid);
+    if (ex) { removeCard(ex.id); toast('Unpinned.'); } else {
+      const p = slot(); s.cards.push({ id: 'k' + s.seq++, t: 'log', lid: rid, x: p.x, y: p.y, note: '', fresh: 1 }); renderBoard(); snd('pin');
+      if (s.cards.filter(c => c.t === 'log').length === 1) toast('Pinned to the board.', narrow() ? 'View board' : null, () => setView('board'));
+    }
+    drawRows(); updateStats(); save();
+  }
+  function removeCard(id) { const s = st(); s.cards = s.cards.filter(c => c.id !== id); s.strings = s.strings.filter(x => x.a !== id && x.b !== id); if (armed === id) armed = null; renderBoard(); drawRows(); updateStats(); save(); }
+  function cardEl(c) {
+    const el = document.createElement('div'); el.dataset.id = c.id; el.style.setProperty('--r', rot(c.id) + 'deg'); el.style.left = c.x + 'px'; el.style.top = c.y + 'px';
+    if (c.t === 'log') {
+      const r = C.byId.get(c.lid); el.className = 'card log'; el.tabIndex = 0; el.setAttribute('aria-label', 'Evidence card ' + r.src + ' ' + fmtTime(r.ts) + '. Arrow keys move, L ties string, Delete removes.');
+      el.innerHTML = `<button class="pinhead" aria-label="Tie string from this card: drag to another card, or click then click another pin" title="Drag to another card to tie red string"></button><button class="x" aria-label="Unpin card">&times;</button><div class="hd"><span class="sr s-${r.src}">${r.src}</span><time>${fmtMonth(r.ts)} ${fmtTime(r.ts)}Z</time></div><div class="ln">${segs(r).map(([k, v]) => k + '=<b>' + esc(v) + '</b>').join(' ')}</div><input class="note" maxlength="70" placeholder="scribble a note..." aria-label="Note for this card" value="${esc(c.note || '')}">`;
+    } else if (c.t === 'note') {
+      el.className = 'card note-t'; el.tabIndex = 0; el.setAttribute('aria-label', 'Sticky note');
+      el.innerHTML = `<button class="pinhead" aria-label="Tie string from this note" title="Drag to another card to tie red string"></button><button class="x" aria-label="Remove note">&times;</button><textarea maxlength="190" aria-label="Sticky note text" placeholder="theory...">${esc(c.text || '')}</textarea>`;
+    } else {
+      el.className = 'card brief'; el.tabIndex = 0; el.setAttribute('aria-label', 'Case file');
+      el.innerHTML = `<span class="pinhead" aria-hidden="true" style="cursor:grab"></span><span class="lv">CASE 0${C.n} &middot; ${C.level.toUpperCase()}</span><h3>${esc(C.title)}</h3><ul>${C.brief.map(b => '<li>' + esc(b) + '</li>').join('')}</ul><div class="go">Find: who, what, how, when, which account.</div>`;
+    }
+    if (c.fresh && !reduce) { el.classList.add('fresh'); setTimeout(() => el.classList.remove('fresh'), 500); } c.fresh = 0; return el;
+  }
+  function renderBoard() {
+    $$('.card', $canvas).forEach(n => n.remove()); const s = st(); s.cards.forEach(c => $canvas.appendChild(cardEl(c))); syncStrings(); layoutCanvas(); drawStrings(); updateStats();
+  }
+  function layoutCanvas() {
+    const cs = st().cards; let mx = 0, my = 0; cs.forEach(c => { mx = Math.max(mx, c.x + cw(c) + 30); my = Math.max(my, c.y + 220); });
+    const w = Math.max($scroller.clientWidth, mx), h = Math.max($scroller.clientHeight, my); $canvas.style.width = w + 'px'; $canvas.style.height = h + 'px'; $svg.setAttribute('width', w); $svg.setAttribute('height', h);
+  }
+  const pinXY = id => { const c = cardOf(id); return { x: c.x + cw(c) / 2, y: c.y + 3 }; };
+  function syncStrings() {
+    const s = st(); $svg.innerHTML = s.strings.map(x => `<g data-sid="${x.id}"><path class="sh"/><path class="st"/><path class="sf"/><path class="hit"><title>Click to cut this string</title></path></g>`).join('');
+  }
+  function sagOf(x, now) {
+    const a = pinXY(x.a), b = pinXY(x.b), d = Math.hypot(a.x - b.x, a.y - b.y), base = Math.min(80, 14 + d * 0.15);
+    if (x.born && !reduce) { const t = (now - x.born) / 1000; if (t < 1.6) return base * (1 - Math.exp(-4.5 * t) * Math.cos(21 * t)); x.born = 0; }
+    return base;
+  }
+  function pathD(a, b, sag) { return `M${a.x.toFixed(1)},${a.y.toFixed(1)} Q${((a.x + b.x) / 2).toFixed(1)},${((a.y + b.y) / 2 + sag * 2).toFixed(1)} ${b.x.toFixed(1)},${b.y.toFixed(1)}`; }
+  function drawStrings(now) {
+    now = now || performance.now(); const s = st(); let anim = false;
+    for (const x of s.strings) {
+      const g = $svg.querySelector('[data-sid="' + x.id + '"]'); if (!g || !cardOf(x.a) || !cardOf(x.b)) continue;
+      const d = pathD(pinXY(x.a), pinXY(x.b), sagOf(x, now)); $$('path', g).forEach(p => p.setAttribute('d', d)); if (x.born) anim = true;
+    }
+    if (anim && !_anim) { _anim = true; requestAnimationFrame(function f(t) { _anim = false; drawStrings(t); }); }
+  }
+  let _anim = false;
+  function connect(a, b) {
+    const s = st(); if (a === b) return; if (s.strings.some(x => (x.a === a && x.b === b) || (x.a === b && x.b === a))) { toast('Those two are already tied.'); return; }
+    s.strings.push({ id: 's' + s.seq++, a, b, born: performance.now() }); syncStrings(); drawStrings(); snd('twang'); updateStats(); save(); toast('String tied. Pull on the thread.');
+  }
+  $svg.addEventListener('click', e => {
+    const g = e.target.closest('g'); if (!g) return; const s = st(); s.strings = s.strings.filter(x => x.id !== g.dataset.sid); g.classList.add('snip'); snd('cut'); setTimeout(() => { syncStrings(); drawStrings(); }, 260); updateStats(); save(); toast('Snip. String cut.');
+  });
+  // pointer interactions (event delegation)
+  $canvas.addEventListener('pointerdown', e => {
+    const card = e.target.closest('.card'); if (!card) return; const c = cardOf(card.dataset.id); if (!c) return;
+    const pin = c.t === 'brief' ? null : e.target.closest('.pinhead');
+    if (pin) return pinDrag(e, card, c, pin);
+    if (e.target.closest('input,textarea,button')) return; cardDrag(e, card, c);
+  });
+  function cardDrag(e, el, c) {
+    e.preventDefault(); el.focus({ preventScroll: true }); const sx = e.clientX, sy = e.clientY, ox = c.x, oy = c.y; let moved = false; el.setPointerCapture(e.pointerId);
+    const mv = ev => { const dx = ev.clientX - sx, dy = ev.clientY - sy; if (!moved && Math.hypot(dx, dy) < 4) return; if (!moved) { moved = true; el.classList.add('dragging'); } c.x = Math.max(0, ox + dx); c.y = Math.max(0, oy + dy); el.style.left = c.x + 'px'; el.style.top = c.y + 'px'; drawStrings(); };
+    const up = () => { el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); el.classList.remove('dragging'); if (moved) { layoutCanvas(); save(); } else if (armed && armed !== c.id && c.t !== 'brief') { const a = armed; armed = null; $$('.pinhead.armed').forEach(p => p.classList.remove('armed')); connect(a, c.id); } };
+    el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  }
+  function pinDrag(e, el, c, pin) {
+    e.preventDefault(); e.stopPropagation(); const sx = e.clientX, sy = e.clientY; let live = null; pin.setPointerCapture(e.pointerId);
+    const rect = () => $canvas.getBoundingClientRect(); let tgt = null;
+    const mv = ev => {
+      if (!live && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return;
+      if (!live) { live = document.createElementNS('http://www.w3.org/2000/svg', 'g'); live.setAttribute('class', 'live'); live.innerHTML = '<path class="sh"/><path class="st"/>'; $svg.appendChild(live); }
+      const r = rect(), a = pinXY(c.id), b = { x: ev.clientX - r.left, y: ev.clientY - r.top }, d = pathD(a, b, 10 + Math.hypot(a.x - b.x, a.y - b.y) * 0.05); $$('path', live).forEach(p => p.setAttribute('d', d));
+      const t = document.elementFromPoint(ev.clientX, ev.clientY), tc = t && t.closest && t.closest('.card'); const nt = tc && tc !== el && !tc.classList.contains('brief') ? tc : null;
+      if (nt !== tgt) { if (tgt) tgt.classList.remove('target'); tgt = nt; if (tgt) tgt.classList.add('target'); }
+    };
+    const up = () => {
+      pin.removeEventListener('pointermove', mv); pin.removeEventListener('pointerup', up); pin.removeEventListener('pointercancel', up); if (tgt) tgt.classList.remove('target');
+      if (live) { live.remove(); if (tgt) connect(c.id, tgt.dataset.id); else toast('Drop the string onto another card.'); return; }
+      if (armed === c.id) { armed = null; pin.classList.remove('armed'); } else if (armed) { const a = armed; armed = null; $$('.pinhead.armed').forEach(p => p.classList.remove('armed')); connect(a, c.id); } else { armed = c.id; pin.classList.add('armed'); toast('Now click another card\'s red pin to tie string.'); }
+    };
+    pin.addEventListener('pointermove', mv); pin.addEventListener('pointerup', up); pin.addEventListener('pointercancel', up);
+  }
+  $canvas.addEventListener('click', e => { const x = e.target.closest('.x'); if (x) removeCard(x.closest('.card').dataset.id); });
+  $canvas.addEventListener('input', e => { const el = e.target.closest('.card'); if (!el) return; const c = cardOf(el.dataset.id); if (!c) return; if (e.target.classList.contains('note')) c.note = e.target.value; else if (e.target.tagName === 'TEXTAREA') c.text = e.target.value; save(); });
+  $canvas.addEventListener('keydown', e => {
+    const el = e.target.closest('.card'); if (!el || e.target !== el) return; const c = cardOf(el.dataset.id); if (!c) return; const k = e.key, step = e.shiftKey ? 48 : 12;
+    if (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'ArrowUp' || k === 'ArrowDown') { e.preventDefault(); c.x = Math.max(0, c.x + (k === 'ArrowRight' ? step : k === 'ArrowLeft' ? -step : 0)); c.y = Math.max(0, c.y + (k === 'ArrowDown' ? step : k === 'ArrowUp' ? -step : 0)); el.style.left = c.x + 'px'; el.style.top = c.y + 'px'; drawStrings(); layoutCanvas(); save(); }
+    else if ((k === 'Delete' || k === 'Backspace') && c.t !== 'brief') { e.preventDefault(); removeCard(c.id); }
+    else if ((k === 'l' || k === 'L') && c.t !== 'brief') { if (!armed) { armed = c.id; el.querySelector('.pinhead').classList.add('armed'); toast('Focus another card and press L to tie string.'); } else if (armed === c.id) { armed = null; el.querySelector('.pinhead').classList.remove('armed'); } else { const a = armed; armed = null; $$('.pinhead.armed').forEach(p => p.classList.remove('armed')); connect(a, c.id); } }
+  });
+  $('#bNote').onclick = () => { const s = st(), p = slot(), id = 'n' + s.seq++; s.cards.push({ id, t: 'note', x: p.x, y: p.y, text: '', fresh: 1 }); renderBoard(); save(); const t = $('[data-id="' + id + '"] textarea'); if (t) t.focus(); };
+  $('#bCut').onclick = () => { const s = st(); if (!s.strings.length) return; s.strings = []; syncStrings(); snd('cut'); updateStats(); save(); toast('All string cut.'); };
+  $('#bTidy').onclick = () => {
+    const s = st(), cs = s.cards.slice().sort((a, b) => (a.t === 'brief' ? -1 : b.t === 'brief' ? 1 : (a.t === 'log' ? C.byId.get(a.lid).ts : 9e15) - (b.t === 'log' ? C.byId.get(b.lid).ts : 9e15)));
+    const cols = Math.max(1, Math.floor(($scroller.clientWidth - 12) / 226)); let i = 0; cs.forEach(c => { if (c.t === 'brief') { c.x = 12; c.y = 12; return; } let x, y; do { x = 12 + (i % cols) * 226; y = 12 + Math.floor(i / cols) * 200; i++; } while (x < 285 && y < 215); c.x = x; c.y = y; });
+    $canvas.classList.add('tidy'); $$('.card', $canvas).forEach(el => { const c = cardOf(el.dataset.id); el.style.left = c.x + 'px'; el.style.top = c.y + 'px'; });
+    const t0 = performance.now(); (function f(t) { drawStrings(t); if (t - t0 < 520) requestAnimationFrame(f); else { $canvas.classList.remove('tidy'); layoutCanvas(); } })(t0); save();
+  };
+  const sty = document.createElement('style'); sty.textContent = '.canvas.tidy .card{transition:left .45s ease,top .45s ease}'; document.head.appendChild(sty);
+
+  /* ---------- hunch + verdict ---------- */
+  const FIELDS_H = () => [['who', 'Who did it?'], ['what', 'What happened?'], ['how', 'How did they do it?'], ['when', C.whenQ], ['account', 'Which account was abused?']];
+  const optLabel = (f, id) => { const o = C.options[f].find(x => x.id === id); return o ? o.label : '(no answer)'; };
+  function judge() {
+    const s = st(), h = s.hunch, ok = {}; let acc = 0; FIELDS_H().forEach(([f]) => { ok[f] = h[f] === C.truth[f]; if (ok[f]) acc += 120; });
+    const pinned = C.keys.map(id => s.cards.some(c => c.t === 'log' && c.lid === id)); const kc = pinned.filter(Boolean).length;
+    const keyCards = s.cards.filter(c => c.t === 'log' && C.keys.includes(c.lid)).map(c => c.id);
+    const kk = s.strings.filter(x => keyCards.includes(x.a) && keyCards.includes(x.b)); let links = 0;
+    if (kk.length) { const comp = new Set([kk[0].a]); let ch = true; while (ch) { ch = false; for (const x of kk) { if (comp.has(x.a) && !comp.has(x.b)) { comp.add(x.b); ch = true; } else if (comp.has(x.b) && !comp.has(x.a)) { comp.add(x.a); ch = true; } } } links = comp.size >= keyCards.length && keyCards.length >= 2 ? 50 : 25; }
+    const pins = s.cards.filter(c => c.t === 'log').length, junk = Math.max(0, pins - 8), pen = Math.min(60, junk * 8);
+    const ev = Math.max(0, Math.min(300, kc * 84 + links - pen));
+    const nOk0 = Object.values(ok).filter(Boolean).length; const qb = s.queries > 0 ? Math.round(Math.max(0, 100 - Math.max(0, s.queries - C.par) * 4) * nOk0 / 5) : 0;
+    const hp = [0, 20, 60, 120][s.hints]; const nOk = Object.values(ok).filter(Boolean).length;
+    const total = Math.max(0, Math.min(1000, acc + ev + qb - hp));
+    const rank = total >= 900 ? 'Chief Inspector' : total >= 700 ? 'Detective' : total >= 450 ? 'Analyst' : 'Rookie';
+    return { hunch: Object.assign({}, h), ok, nOk, acc, ev, kc, pinned, links, pen, pins, qb, hp, total, rank, queries: s.queries, hints: s.hints, stamp: nOk === 5 ? 'CASE CLOSED' : nOk >= 3 ? 'PARTIAL' : 'COLD TRAIL', cls: nOk === 5 ? '' : nOk >= 3 ? 'part' : 'cold' };
+  }
+  function openHunch() { renderHunch(); const d = $('#hunch'); if (!d.open) d.showModal(); }
+  function renderHunch() {
+    const s = st(), b = $('#hbody');
+    if (!s.result) {
+      b.innerHTML = `<h2 id="hTitle">File your hunch</h2><p class="sub">Case 0${C.n} &middot; ${esc(C.title)}. Pick one answer each. Submitting closes the case and scores it.</p>
+      <form id="hform"><div class="fgrid">${FIELDS_H().map(([f, l]) => `<label class="${f === 'who' || f === 'how' ? 'w' : ''}">${esc(l)}<select name="${f}" required><option value="">Choose...</option>${C.options[f].map(o => `<option value="${esc(o.id)}"${s.hunch[f] === o.id ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}</select></label>`).join('')}</div>
+      <div class="facts"><button class="btn" id="hGo" type="submit" disabled>Submit hunch</button><button class="btn alt" type="button" id="hClose">Keep investigating</button><span class="fsmall">${s.cards.filter(c => c.t === 'log').length} lines pinned &middot; ${s.queries} queries &middot; ${s.hints} hints</span></div></form>`;
+      const form = $('#hform'), go = $('#hGo'); const chk = () => { go.disabled = !FIELDS_H().every(([f]) => form.elements[f].value); }; chk();
+      form.addEventListener('change', e => { s.hunch[e.target.name] = e.target.value; chk(); save(); });
+      form.addEventListener('submit', e => { e.preventDefault(); s.result = judge(); save(); snd('stamp'); renderTabs(); updateStats(); renderHunch(); });
+      $('#hClose').onclick = () => $('#hunch').close(); return;
+    }
+    const r = s.result, nxt = CASES[(CASES.indexOf(C) + 1) % CASES.length];
+    b.innerHTML = `<span class="stamp ${r.cls}">${r.stamp}</span><h2 id="hTitle">Case 0${C.n}: ${esc(C.title)}</h2><p class="sub">${esc(C.co)} (fictional) &middot; verdict</p>
+    <div class="score"><b>${r.total}</b><span>/ 1000 &middot; ${r.rank}</span></div>
+    <div class="bd"><div><b>${r.acc}</b>accuracy (${r.nOk}/5)</div><div><b>${r.ev}</b>evidence (${r.kc}/3 key lines${r.links ? ', strung' : ''})</div><div><b>${r.qb}</b>query economy (${r.queries} used, par ${C.par})</div><div><b>-${r.hp}</b>hints (${r.hints})</div></div>
+    <table class="vt">${FIELDS_H().map(([f, l]) => `<tr><th>${esc(l)}</th><td>${r.ok[f] ? '<span class="ok">RIGHT</span> ' : '<span class="no">MISSED</span> '}${esc(optLabel(f, r.hunch[f]))}${r.ok[f] ? '' : '<br><span class="ok">Answer: ' + esc(optLabel(f, C.truth[f])) + '</span>'}</td></tr>`).join('')}</table>
+    <h3 style="font:400 18px var(--type);margin:10px 0 0;color:#5b2410">The lines that gave it away</h3>
+    ${C.keys.map((id, i) => `<div class="kl"><span class="pz ${r.pinned[i] ? '' : 'm'}">${r.pinned[i] ? 'YOU PINNED THIS' : 'YOU MISSED THIS'}</span> ${esc(fmtMonth(C.byId.get(id).ts) + ' ' + fmtTime(C.byId.get(id).ts) + 'Z [' + C.byId.get(id).src + '] ' + C.byId.get(id).line.slice(0, 230))}<small>${esc(C.keyWhy[i])}</small></div>`).join('')}
+    <h3 style="font:400 18px var(--type);margin:10px 0 0;color:#5b2410">What happened</h3><ul class="story">${C.story.map(x => '<li>' + esc(x) + '</li>').join('')}</ul>
+    <div class="facts"><button class="btn" id="hNext">Next case</button><button class="btn alt" id="hRe">Replay this case</button><button class="btn alt" id="hCopy">Copy result</button><button class="btn alt" id="hClose">Close</button></div>`;
+    $('#hNext').onclick = () => { $('#hunch').close(); switchCase(nxt.id); };
+    $('#hRe').onclick = () => { delete S.cases[C.id]; $('#hunch').close(); armed = null; renderAll(); save(); };
+    $('#hClose').onclick = () => $('#hunch').close();
+    $('#hCopy').onclick = async () => { const t = 'LogSleuth case 0' + C.n + ' "' + C.title + '": ' + r.total + '/1000 (' + r.rank + '). ' + r.nOk + '/5 correct, ' + r.kc + '/3 key lines, ' + r.queries + ' queries, ' + r.hints + ' hints. https://tootenramen.github.io/LogSleuth/'; try { await navigator.clipboard.writeText(t); toast('Result copied.'); } catch (e) { toast('Could not copy; select the score by hand.'); } };
+  }
+  $('#bHunch').onclick = openHunch;
+
+  /* ---------- boot ---------- */
+  function renderAll() {
+    renderTabs(); renderChips(); const s = st(); $q.value = s.q || ''; renderHints(); renderBoard(); execute(false); updateStats(); $q.setAttribute('placeholder', 'user:priya.nair  |  powershell  |  event:signin | count by ip');
+  }
+  applyPrefs(); if (narrow()) $('#cheat').open = false;
+  renderAll();
+  window.addEventListener('resize', () => { layoutCanvas(); drawStrings(); drawRows(); });
+  window.__ls = { runQuery: q => runQuery(C, q), CASES, st, switchCase };
+})();
+
+</script>
+</body>
+</html>
