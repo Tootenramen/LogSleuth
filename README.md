@@ -12,7 +12,7 @@ A noir detective game where you crack fictional breaches by actually querying th
 
 - Work three cases (easy, medium, hard): an MFA-fatigue account takeover, a slow DNS-tunnel exfiltration, and a malicious insider hiding behind a colleague's access key.
 - Query 3,000 to 4,600 generated log lines per case (auth, web gateway, endpoint, DNS, cloud audit) with a small real query language: keywords, `field:value`, wildcards, numeric compares, time ranges, `| count by`, `| top`, `| head`, with autocomplete.
-- Pin the decisive lines to a cork corkboard, drag the cards, tie red string between them (it wobbles when you pull it), and scribble notes.
+- Pin the decisive lines to an evidence board, drag the cards, tie red string between them (it wobbles when you pull it), and scribble notes.
 - File a hunch (who, what, how, when, which account). You get a verdict, a breakdown of what you got right and missed, and the 2-3 lines that gave it away.
 - Hints are tiered and cost points. Score rewards accuracy, evidence quality and fewer queries.
 
